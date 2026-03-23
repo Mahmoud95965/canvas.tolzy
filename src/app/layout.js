@@ -38,7 +38,10 @@ export const metadata = {
   },
   alternates: {
     canonical: '/',
-  }
+  },
+  verification: {
+    google: 'CvfgfNzJGq2YOnvINe7ljJLpIgW4pDugHzdpbWaPvWY',
+  },
 };
 
 export const viewport = {
