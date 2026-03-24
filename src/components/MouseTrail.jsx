@@ -49,7 +49,7 @@ export default function MouseTrail({ color = '#ffffff' }) {
           points.push({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
-            size: Math.random() * 1.5 + 0.5,
+            size: Math.random() * 2.5 + 1.5, // Increased size for visibility
             vx: (Math.random() - 0.5) * 0.3,
             vy: (Math.random() - 0.5) * 0.3,
           });
@@ -80,21 +80,27 @@ export default function MouseTrail({ color = '#ffffff' }) {
         const dy = mouse.y - p.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        const maxDist = 180;
+        const maxDist = 200; // slightly larger reach
         if (dist < maxDist) {
-          const alpha = 1 - (dist / maxDist);
+          // Boost alpha so it gets fully opaque faster
+          const alpha = Math.min(1, (1 - (dist / maxDist)) * 2);
           
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 0.9})`;
+          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+          ctx.shadowBlur = 15; // Add bright glow
+          ctx.shadowColor = `rgba(${r}, ${g}, ${b}, ${alpha})`;
           ctx.fill();
 
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
           ctx.lineTo(mouse.x, mouse.y);
-          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 0.3})`;
-          ctx.lineWidth = 0.8;
+          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 0.5})`;
+          ctx.lineWidth = 1.5; // Thicker lines
           ctx.stroke();
+          
+          // Reset shadow to not affect other drawings unexpectedly
+          ctx.shadowBlur = 0;
         }
       }
 
@@ -121,7 +127,7 @@ export default function MouseTrail({ color = '#ffffff' }) {
         height: '100%',
         pointerEvents: 'none',
         zIndex: 5, /* Placed slightly above grid but seamlessly in background */
-        opacity: 0.9
+        opacity: 1
       }}
     />
   );
