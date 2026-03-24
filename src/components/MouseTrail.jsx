@@ -23,28 +23,19 @@ export default function MouseTrail({ color = '#ffffff' }) {
     };
 
     window.addEventListener('resize', resizeCanvas);
-    // Slight delay to ensure parent is rendered fully
     setTimeout(resizeCanvas, 0);
 
-    const particles = [];
+    // Initialize scattered points
+    const points = [];
+    const numPoints = 250; 
+
     let mouse = { x: -1000, y: -1000 };
+    let targetMouse = { x: -1000, y: -1000 };
 
     const handleMouseMove = (e) => {
       const rect = canvas.getBoundingClientRect();
-      mouse.x = e.clientX - rect.left;
-      mouse.y = e.clientY - rect.top;
-
-      // Spawn particles
-      for (let i = 0; i < 3; i++) {
-        particles.push({
-          x: mouse.x + (Math.random() - 0.5) * 12,
-          y: mouse.y + (Math.random() - 0.5) * 12,
-          vx: (Math.random() - 0.5) * 1.5,
-          vy: (Math.random() - 0.5) * 1.5,
-          life: 1,
-          size: Math.random() * 2.5 + 1
-        });
-      }
+      targetMouse.x = e.clientX - rect.left;
+      targetMouse.y = e.clientY - rect.top;
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -52,27 +43,58 @@ export default function MouseTrail({ color = '#ffffff' }) {
     const render = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
+      // Lazily initialize points once canvas has bound dimensions
+      if (points.length === 0 && canvas.width > 0) {
+        for (let i = 0; i < numPoints; i++) {
+          points.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 1.5 + 0.5,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: (Math.random() - 0.5) * 0.3,
+          });
+        }
+      }
+
+      // Smooth mouse follow
+      mouse.x += (targetMouse.x - mouse.x) * 0.15;
+      mouse.y += (targetMouse.y - mouse.y) * 0.15;
+
+      let r = 255, g = 255, b = 255;
+      if (color.startsWith('#') && color.length === 7) {
+        r = parseInt(color.slice(1, 3), 16);
+        g = parseInt(color.slice(3, 5), 16);
+        b = parseInt(color.slice(5, 7), 16);
+      }
+
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+
         p.x += p.vx;
         p.y += p.vy;
-        p.life -= 0.03; // Fade out speed
 
-        if (p.life <= 0) {
-          particles.splice(i, 1);
-        } else {
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+        const dx = mouse.x - p.x;
+        const dy = mouse.y - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        const maxDist = 180;
+        if (dist < maxDist) {
+          const alpha = 1 - (dist / maxDist);
+          
           ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size * (p.life + 0.2), 0, Math.PI * 2);
-          
-          let r = 255, g = 255, b = 255;
-          if (color.startsWith('#') && color.length === 7) {
-            r = parseInt(color.slice(1, 3), 16);
-            g = parseInt(color.slice(3, 5), 16);
-            b = parseInt(color.slice(5, 7), 16);
-          }
-          
-          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${p.life})`;
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 0.9})`;
           ctx.fill();
+
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(mouse.x, mouse.y);
+          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 0.3})`;
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
         }
       }
 
@@ -98,8 +120,8 @@ export default function MouseTrail({ color = '#ffffff' }) {
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
-        zIndex: 0,
-        opacity: 0.8
+        zIndex: 5, /* Placed slightly above grid but seamlessly in background */
+        opacity: 0.9
       }}
     />
   );

@@ -328,8 +328,8 @@ const CanvasEditor = ({ project, user, onBack }) => {
       {/* ══════ TOP BAR ══════ */}
       <div style={{
         height:'56px', display:'flex', alignItems:'center', justifyContent:'space-between',
-        padding:'0 16px', background: bg(0.85), backdropFilter:'blur(20px)',
-        borderBottom:`1px solid ${border}`, zIndex:50,
+        padding:'0 16px', background: 'transparent',
+        borderBottom: 'none', zIndex:50,
       }}>
         <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
           <button onClick={onBack} style={S.iconBtn}><ArrowLeft size={18} /></button>
@@ -490,7 +490,7 @@ const CanvasEditor = ({ project, user, onBack }) => {
           onWheel={onWheel}
           onClick={(e) => { if (e.target === canvasRef.current) setSelectedFrame(null) }}
         >
-          {/* White Mouse Trail */}
+          {/* White Mouse Interactive Network layer */}
           {darkMode && <MouseTrail color="#ffffff" />}
 
           {/* Frames Layer */}

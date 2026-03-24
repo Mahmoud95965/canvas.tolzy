@@ -400,3 +400,55 @@ input:focus, textarea:focus {
   }
 }
 
+/* --- Presentation & Onboarding Animations --- */
+@keyframes dramaticSlideUp {
+  0% { opacity: 0; transform: translateY(60px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes dramaticFadeIn {
+  0% { opacity: 0; filter: blur(10px); }
+  100% { opacity: 1; filter: blur(0); }
+}
+
+@keyframes textReveal {
+  0% { transform: translateY(100%); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes glowPulseStrong {
+  0%, 100% { text-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
+  50% { text-shadow: 0 0 40px rgba(99, 102, 241, 0.8), 0 0 80px rgba(168, 85, 247, 0.6); }
+}
+
+.animate-dramatic-up {
+  animation: dramaticSlideUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-dramatic-fade {
+  animation: dramaticFadeIn 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-text-reveal {
+  display: inline-block;
+  animation: textReveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.glow-text-strong {
+  animation: glowPulseStrong 3s infinite;
+}
+
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+.delay-600 { animation-delay: 600ms; }
+.delay-800 { animation-delay: 800ms; }
+.delay-1000 { animation-delay: 1000ms; }
+
+/* Keep elements hidden before animation starts */
+.animate-dramatic-up, .animate-dramatic-fade, .animate-text-reveal {
+  opacity: 0;
+}
+
