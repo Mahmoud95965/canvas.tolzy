@@ -17,8 +17,7 @@ export default function Home() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       
-      const hasSeen = localStorage.getItem('hasSeenOnboarding')
-      if (!session && !hasSeen) {
+      if (!session) {
         setShowOnboarding(true)
       }
 
@@ -74,7 +73,6 @@ export default function Home() {
   if (showOnboarding) {
     return (
       <Onboarding onComplete={() => {
-        localStorage.setItem('hasSeenOnboarding', 'true')
         setShowOnboarding(false)
       }} />
     )

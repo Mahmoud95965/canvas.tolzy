@@ -27,7 +27,7 @@ export default function MouseTrail({ color = '#ffffff' }) {
 
     // Initialize scattered points
     const points = [];
-    const numPoints = 250; 
+    const numPoints = 120; // Reduced dot count
 
     let mouse = { x: -1000, y: -1000 };
     let targetMouse = { x: -1000, y: -1000 };
@@ -49,9 +49,9 @@ export default function MouseTrail({ color = '#ffffff' }) {
           points.push({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
-            size: Math.random() * 2.5 + 1.5, // Increased size for visibility
-            vx: (Math.random() - 0.5) * 0.3,
-            vy: (Math.random() - 0.5) * 0.3,
+            size: Math.random() * 1.5 + 0.5, // Reduced size for subtlety
+            vx: (Math.random() - 0.5) * 0.15, // Slower movement
+            vy: (Math.random() - 0.5) * 0.15,
           });
         }
       }
@@ -80,27 +80,40 @@ export default function MouseTrail({ color = '#ffffff' }) {
         const dy = mouse.y - p.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        const maxDist = 200; // slightly larger reach
-        if (dist < maxDist) {
-          // Boost alpha so it gets fully opaque faster
-          const alpha = Math.min(1, (1 - (dist / maxDist)) * 2);
-          
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
-          ctx.shadowBlur = 15; // Add bright glow
-          ctx.shadowColor = `rgba(${r}, ${g}, ${b}, ${alpha})`;
-          ctx.fill();
+        const maxDist = 200; 
+        
+        let pointAlpha = 0.15; // Base visibility everywhere
+        let lineAlpha = 0;
+        let isNearMouse = false;
 
+        if (dist < maxDist) {
+          isNearMouse = true;
+          const distFactor = (1 - (dist / maxDist));
+          pointAlpha = Math.min(1, 0.15 + distFactor * 0.85); // Glow up when near
+          lineAlpha = Math.min(1, distFactor * 0.4); // Line opacity
+        }
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${pointAlpha})`;
+        
+        if (isNearMouse) {
+          ctx.shadowBlur = 12;
+          ctx.shadowColor = `rgba(${r}, ${g}, ${b}, ${pointAlpha})`;
+        } else {
+          ctx.shadowBlur = 0;
+        }
+        
+        ctx.fill();
+        ctx.shadowBlur = 0; // Reset
+
+        if (lineAlpha > 0) {
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
           ctx.lineTo(mouse.x, mouse.y);
-          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 0.5})`;
-          ctx.lineWidth = 1.5; // Thicker lines
+          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${lineAlpha})`;
+          ctx.lineWidth = 1;
           ctx.stroke();
-          
-          // Reset shadow to not affect other drawings unexpectedly
-          ctx.shadowBlur = 0;
         }
       }
 

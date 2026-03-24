@@ -1,7 +1,8 @@
 'use client';
 import React, { useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { Mail, Chrome, ArrowRight, X } from 'lucide-react'
+import { Mail, Chrome, ArrowRight, Sparkles, Lock } from 'lucide-react'
+import ParticlesBackground from './ParticlesBackground'
 
 const Auth = () => {
   const [mode, setMode] = useState('login') // 'login' or 'signup'
@@ -24,7 +25,7 @@ const Auth = () => {
         }
       })
       if (error) setMessage({ type: 'error', text: error.message })
-      else setMessage({ type: 'success', text: 'Check your email for the confirmation link!' })
+      else setMessage({ type: 'success', text: 'تم إرسال رابط التفعيل، تحقق من بريدك الإلكتروني.' })
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) setMessage({ type: 'error', text: error.message })
@@ -43,25 +44,37 @@ const Auth = () => {
   }
 
   return (
-    <div style={styles.overlay}>
-      <div className="responsive-modal" style={styles.modal}>
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 1000,
+      backgroundColor: '#0c0c0e', color: '#fff',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      overflow: 'hidden'
+    }}>
+      {/* Immersive Background */}
+      <ParticlesBackground />
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, rgba(99,102,241,0.05), rgba(12,12,14,0.9) 70%)', pointerEvents: 'none' }} />
+
+      <div className="animate-dramatic-up" style={styles.modal}>
+        
         <div style={styles.header}>
-          <div className="responsive-logo" style={styles.logo}>Tolzy</div>
-          <h2 className="responsive-title" style={styles.title}>{mode === 'login' ? 'Welcome back' : 'Create an account'}</h2>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg, #6366f1, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+            <Sparkles size={24} color="#fff" />
+          </div>
+          <h2 style={styles.title}>{mode === 'login' ? 'مرحباً بك مجدداً' : 'إنشاء حساب جديد'}</h2>
           <p style={styles.subtitle}>
-            {mode === 'login' ? 'Sign in to continue your projects' : 'Start your creative journey with Tolzy'}
+            {mode === 'login' ? 'سجل دخولك لاستكمال مشاريعك الإبداعية' : 'ابدأ رحلتك في صناعة الواجهات المعقدة بذكاء'}
           </p>
         </div>
 
         <div style={styles.body}>
-          <button style={styles.googleBtn} onClick={handleGoogleLogin}>
+          <button className="auth-btn-google" style={styles.googleBtn} onClick={handleGoogleLogin}>
             <Chrome size={20} />
-            Continue with Google
+            المتابعة باستخدام Google
           </button>
 
           <div style={styles.divider}>
             <div style={styles.line}></div>
-            <span style={styles.or}>or</span>
+            <span style={styles.or}>أو عبر البريد</span>
             <div style={styles.line}></div>
           </div>
 
@@ -69,18 +82,22 @@ const Auth = () => {
             <div style={styles.inputGroup}>
               <Mail size={18} style={styles.inputIcon} />
               <input
+                className="auth-input"
                 type="email"
-                placeholder="Email address"
+                placeholder="البريد الإلكتروني"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 style={styles.input}
               />
             </div>
+            
             <div style={styles.inputGroup}>
+              <Lock size={18} style={styles.inputIcon} />
               <input
+                className="auth-input"
                 type="password"
-                placeholder="Password"
+                placeholder="كلمة المرور"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -88,14 +105,14 @@ const Auth = () => {
               />
             </div>
             
-            <button type="submit" disabled={loading} style={styles.submitBtn}>
-              {loading ? (mode === 'login' ? 'Signing in...' : 'Creating account...') : (mode === 'login' ? 'Continue' : 'Create Account')}
-              <ArrowRight size={18} />
+            <button type="submit" disabled={loading} className="auth-btn-primary" style={styles.submitBtn}>
+              {loading ? (mode === 'login' ? 'جاري الدخول...' : 'جاري الإنشاء...') : (mode === 'login' ? 'تسجيل الدخول' : 'إنشاء الحساب')}
+              <ArrowRight size={20} />
             </button>
           </form>
 
           {message.text && (
-            <div style={{...styles.message, color: message.type === 'error' ? '#ff4d4d' : '#4caf50'}}>
+            <div style={{...styles.message, color: message.type === 'error' ? '#ff4d4d' : '#4ade80', background: message.type === 'error' ? 'rgba(255,77,77,0.1)' : 'rgba(74,222,128,0.1)', padding: 12, borderRadius: 8}}>
               {message.text}
             </div>
           )}
@@ -103,9 +120,9 @@ const Auth = () => {
 
         <div style={styles.toggleFooter}>
           {mode === 'login' ? (
-            <>Don't have an account? <span style={styles.toggleLink} onClick={() => setMode('signup')}>Sign up</span></>
+            <>ليس لديك حساب؟ <span style={styles.toggleLink} onClick={() => setMode('signup')}>مستخدم جديد</span></>
           ) : (
-            <>Already have an account? <span style={styles.toggleLink} onClick={() => setMode('login')}>Sign in</span></>
+            <>لديك حساب بالفعل؟ <span style={styles.toggleLink} onClick={() => setMode('login')}>تسجيل الدخول</span></>
           )}
         </div>
       </div>
@@ -114,30 +131,21 @@ const Auth = () => {
 }
 
 const styles = {
-  overlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.85)',
-    backdropFilter: 'blur(8px)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-  },
   modal: {
+    position: 'relative',
     width: '100%',
-    maxWidth: '400px',
-    backgroundColor: '#1a1a1a',
-    borderRadius: '24px',
-    border: '1px solid #333',
-    padding: '40px',
+    maxWidth: '440px',
+    backgroundColor: 'rgba(20,20,24,0.6)',
+    backdropFilter: 'blur(32px)',
+    borderRadius: '32px',
+    border: '1px solid rgba(255,255,255,0.08)',
+    padding: '48px',
     display: 'flex',
     flexDirection: 'column',
     gap: '32px',
-    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
+    boxShadow: '0 40px 80px rgba(0, 0, 0, 0.6), inset 0 2px 4px rgba(255,255,255,0.05)',
+    zIndex: 10,
+    margin: '20px'
   },
   header: {
     textAlign: 'center',
@@ -146,27 +154,22 @@ const styles = {
     alignItems: 'center',
     gap: '8px',
   },
-  logo: {
-    fontSize: '28px',
-    fontWeight: '700',
-    color: '#fff',
-    letterSpacing: '-1px',
-    marginBottom: '12px',
-  },
   title: {
-    fontSize: '24px',
-    fontWeight: '600',
+    fontSize: '28px',
+    fontWeight: '800',
     margin: 0,
+    letterSpacing: '-0.02em'
   },
   subtitle: {
-    fontSize: '14px',
-    color: '#888',
+    fontSize: '15px',
+    color: '#9ca3af',
     margin: 0,
+    lineHeight: 1.5
   },
   body: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '16px',
+    gap: '20px',
   },
   googleBtn: {
     width: '100%',
@@ -174,33 +177,35 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '12px',
-    padding: '12px',
-    borderRadius: '12px',
+    padding: '16px',
+    borderRadius: '16px',
     backgroundColor: '#fff',
     color: '#000',
-    fontSize: '15px',
-    fontWeight: '500',
+    fontSize: '16px',
+    fontWeight: '600',
     border: 'none',
+    cursor: 'pointer'
   },
   divider: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    margin: '8px 0',
+    margin: '4px 0',
   },
   line: {
     flex: 1,
     height: '1px',
-    backgroundColor: '#333',
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   or: {
-    fontSize: '13px',
-    color: '#666',
+    fontSize: '14px',
+    color: '#6b7280',
+    fontWeight: 500
   },
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px',
+    gap: '16px',
   },
   inputGroup: {
     position: 'relative',
@@ -208,49 +213,56 @@ const styles = {
   },
   inputIcon: {
     position: 'absolute',
-    left: '12px',
+    right: '16px', /* Flipped for RTL support */
     top: '50%',
     transform: 'translateY(-50%)',
-    color: '#666',
+    color: '#6b7280',
+    zIndex: 2
   },
   input: {
     width: '100%',
-    padding: '12px 12px 12px 40px',
-    borderRadius: '12px',
-    backgroundColor: '#222',
-    border: '1px solid #333',
+    padding: '16px 44px 16px 16px',
+    borderRadius: '16px',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    border: '1px solid rgba(255,255,255,0.1)',
     color: '#fff',
-    fontSize: '15px',
+    fontSize: '16px',
+    direction: 'rtl'
   },
   submitBtn: {
     width: '100%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '8px',
-    padding: '12px',
-    borderRadius: '12px',
-    backgroundColor: '#007aff',
+    gap: '12px',
+    padding: '16px',
+    borderRadius: '16px',
+    background: 'linear-gradient(135deg, #6366f1, #a855f7)',
+    boxShadow: '0 12px 24px rgba(99,102,241,0.3)',
     color: '#fff',
-    fontSize: '15px',
-    fontWeight: '500',
+    fontSize: '18px',
+    fontWeight: '700',
+    border: 'none',
+    cursor: 'pointer',
+    marginTop: '8px'
   },
   message: {
-    fontSize: '13px',
-    color: '#4caf50',
+    fontSize: '14px',
     textAlign: 'center',
+    fontWeight: 500
   },
   toggleFooter: {
-    fontSize: '14px',
-    color: '#888',
+    fontSize: '15px',
+    color: '#9ca3af',
     textAlign: 'center',
     marginTop: '8px',
   },
   toggleLink: {
-    color: '#007aff',
+    color: '#a855f7',
     cursor: 'pointer',
-    fontWeight: '600',
-    marginLeft: '4px',
+    fontWeight: '700',
+    marginLeft: '6px',
+    transition: 'color 0.2s'
   },
 }
 

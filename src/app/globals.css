@@ -452,3 +452,33 @@ input:focus, textarea:focus {
   opacity: 0;
 }
 
+/* --- Premium Auth Styles --- */
+.auth-input {
+  transition: all 0.3s ease;
+}
+.auth-input:focus {
+  outline: none;
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.2), inset 0 2px 4px rgba(0,0,0,0.5);
+  background-color: #1a1a20 !important;
+}
+
+.auth-btn-primary {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.auth-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px rgba(99,102,241,0.5) !important;
+}
+.auth-btn-primary:active {
+  transform: translateY(1px);
+}
+
+.auth-btn-google {
+  transition: all 0.2s ease;
+}
+.auth-btn-google:hover {
+  background-color: #f3f4f6 !important;
+  transform: translateY(-1px);
+}
+

@@ -1,9 +1,9 @@
 'use client';
-import React, { useState } from 'react';
-import { ArrowLeft, Sparkles, LayoutGrid, Code, Download, Zap } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { Sparkles, LayoutGrid, Download, Zap, ArrowLeft } from 'lucide-react';
 import ParticlesBackground from './ParticlesBackground';
 
-const slides = [
+const sections = [
   {
     id: 1,
     title: 'مرحباً بك في مستقبل تصميم الواجهات',
@@ -31,101 +31,122 @@ const slides = [
 ];
 
 export default function Onboarding({ onComplete }) {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [animating, setAnimating] = useState(false);
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = 1;
+          entry.target.style.transform = 'translateY(0) scale(1)';
+        }
+      });
+    }, { threshold: 0.15 });
 
-  const nextStep = () => {
-    if (animating) return;
-    if (currentStep < slides.length - 1) {
-      setAnimating(true);
-      setCurrentStep(prev => prev + 1);
-      setTimeout(() => setAnimating(false), 800); 
-    } else {
-      onComplete();
-    }
-  };
-
-  const slide = slides[currentStep];
-  const Icon = slide.icon;
+    document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999, overflow: 'hidden',
-      backgroundColor: '#0c0c0e', color: '#fff', display: 'flex', flexDirection: 'column'
+    <div className="premium-scrollbar" style={{
+      position: 'absolute', inset: 0, zIndex: 9999,
+      backgroundColor: '#0c0c0e', color: '#fff',
+      overflowY: 'auto', overflowX: 'hidden', direction: 'rtl'
     }}>
-      {/* 3D Background */}
-      <ParticlesBackground />
-      
-      {/* Top Gradient Overlay for readability */}
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at top, rgba(99,102,241,0.1), transparent 60%)', zIndex: 1, pointerEvents: 'none' }} />
+      {/* Fixed 3D Background */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
+        <ParticlesBackground />
+        {/* Gradient Overlay for better readability */}
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at top, rgba(99,102,241,0.15), rgba(12,12,14,0.85) 80%)', pointerEvents: 'none' }} />
+      </div>
 
-      <div style={{ position: 'relative', zIndex: 10, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px', textAlign: 'center' }}>
+      <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         
-        {/* Unmount/remount standard React trick to re-trigger CSS animations */}
-        <div key={currentStep} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '800px' }}>
-          <div className="animate-dramatic-up" style={{
-            width: '80px', height: '80px', borderRadius: '24px',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(168,85,247,0.2))',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            marginBottom: '32px', border: '1px solid rgba(255,255,255,0.1)',
-            boxShadow: '0 0 40px rgba(99,102,241,0.3)'
-          }}>
-            <Icon size={40} color="#818cf8" />
+        {/* Header/Logo area */}
+        <div style={{ width: '100%', padding: '40px', display: 'flex', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #6366f1, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Sparkles size={18} color="#fff" />
+            </div>
+            <span style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em' }}>TOLZY Canvas</span>
           </div>
-          
-          <h1 className="animate-dramatic-up delay-200 glow-text-strong" style={{
-             fontSize: 'clamp(32px, 5vw, 64px)', fontWeight: 800, letterSpacing: '-0.02em', 
-             lineHeight: 1.2, marginBottom: '24px',
-             background: 'linear-gradient(to right, #ffffff, #a5b4fc)',
-             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
-          }}>
-            {slide.title}
-          </h1>
-          
-          <p className="animate-dramatic-fade delay-400" style={{
-             fontSize: 'clamp(16px, 2vw, 24px)', color: '#9ca3af', lineHeight: 1.6, maxWidth: '600px'
-          }}>
-            {slide.subtitle}
-          </p>
         </div>
 
-      </div>
+        {/* Sections */}
+        {sections.map((section, index) => {
+          const Icon = section.icon;
+          return (
+            <div key={section.id} className="scroll-reveal" style={{
+              minHeight: index === 0 ? '60vh' : '80vh', width: '100%', maxWidth: '1000px', padding: '60px 24px',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+              opacity: 0, transform: 'translateY(60px) scale(0.95)', transition: 'all 1s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}>
+              <div style={{
+                width: '100px', height: '100px', borderRadius: '30px',
+                background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(168,85,247,0.1))',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                marginBottom: '40px', border: '1px solid rgba(255,255,255,0.05)',
+                boxShadow: '0 20px 40px rgba(99,102,241,0.15)'
+              }}>
+                <Icon size={48} color="#818cf8" />
+              </div>
+              
+              <h2 style={{
+                 fontSize: 'clamp(36px, 6vw, 64px)', fontWeight: 800, letterSpacing: '-0.02em', 
+                 lineHeight: 1.2, marginBottom: '24px',
+                 background: 'linear-gradient(to left, #ffffff, #a5b4fc)',
+                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
+              }}>
+                {section.title}
+              </h2>
+              
+              <p style={{
+                 fontSize: 'clamp(18px, 3vw, 24px)', color: '#9ca3af', lineHeight: 1.7, maxWidth: '700px'
+              }}>
+                {section.subtitle}
+              </p>
+            </div>
+          );
+        })}
 
-      {/* Footer Controls */}
-      <div style={{ position: 'relative', zIndex: 10, padding: '40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
-        
-        {/* Indicators */}
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {slides.map((s, i) => (
-            <div key={s.id} style={{
-              width: i === currentStep ? '32px' : '8px', height: '8px', borderRadius: '4px',
-              background: i === currentStep ? '#6366f1' : 'rgba(255,255,255,0.2)',
-              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
-            }} />
-          ))}
+        {/* Final CTA Section */}
+        <div className="scroll-reveal" style={{
+          minHeight: '80vh', width: '100%', padding: '60px 24px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          opacity: 0, transform: 'translateY(60px)', transition: 'all 1s cubic-bezier(0.16, 1, 0.3, 1)'
+        }}>
+          <div style={{
+            background: 'rgba(20,20,24,0.6)', border: '1px solid rgba(255,255,255,0.1)',
+            padding: '60px 40px', borderRadius: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+            boxShadow: '0 40px 80px rgba(0,0,0,0.5)', maxWidth: '600px', width: '100%', textAlign: 'center',
+            backdropFilter: 'blur(32px)'
+          }}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(34,197,94,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+              <Zap size={32} color="#22c55e" />
+            </div>
+            <h3 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '16px' }}>جاهز لصنع المعجزات؟</h3>
+            <p style={{ fontSize: '18px', color: '#9ca3af', marginBottom: '40px' }}>سجل دخولك الآن وابدأ في إنشاء واجهاتك الأولى مجاناً لتنضم إلى المطورين المحترفين.</p>
+            <button 
+              onClick={onComplete}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '12px',
+                padding: '18px 40px', borderRadius: '99px',
+                background: 'linear-gradient(135deg, #6366f1, #a855f7)',
+                color: '#fff', fontSize: '20px', fontWeight: 700, border: 'none',
+                cursor: 'pointer', outline: 'none', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                boxShadow: '0 12px 40px rgba(99,102,241,0.5)',
+                width: '100%', justifyContent: 'center'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05) translateY(-4px)'; e.currentTarget.style.boxShadow = '0 20px 60px rgba(99,102,241,0.6)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1) translateY(0)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(99,102,241,0.5)'; }}
+            >
+              ابدأ الاستخدام الآن
+              <ArrowLeft size={24} />
+            </button>
+          </div>
         </div>
 
-        {/* Next/Start Button */}
-        <button 
-          onClick={nextStep}
-          className="animate-dramatic-fade delay-600"
-          style={{
-            display: 'flex', alignItems: 'center', gap: '12px',
-            padding: '16px 32px', borderRadius: '99px',
-            background: 'linear-gradient(135deg, #6366f1, #a855f7)',
-            color: '#fff', fontSize: '18px', fontWeight: 600, border: 'none',
-            cursor: 'pointer', outline: 'none', transition: 'box-shadow 0.2s',
-            boxShadow: '0 8px 32px rgba(99,102,241,0.4)',
-          }}
-          onMouseDown={e => e.currentTarget.style.transform = 'scale(0.95)'}
-          onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
-          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-        >
-          {currentStep === slides.length - 1 ? 'ابدأ الاستخدام الآن' : 'التالي'}
-          {currentStep === slides.length - 1 ? <Sparkles size={20} /> : <ArrowLeft size={20} />}
-        </button>
+        {/* Footer padding */}
+        <div style={{ height: '10vh' }}></div>
       </div>
-
     </div>
   );
 }
