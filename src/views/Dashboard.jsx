@@ -4,7 +4,7 @@ import {
   Search, Plus, LayoutGrid, Sparkles, Mic, Globe, Settings,
   HelpCircle, Sun, Moon, Trash2, MoreVertical, LogOut, User,
   ChevronRight, FolderOpen, ArrowLeft, ArrowRight,
-  Facebook, BookText
+  Facebook, BookText, Menu, X
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -20,6 +20,7 @@ const Dashboard = ({ user, onOpenProject }) => {
   const [darkMode, setDarkMode] = React.useState(true)
   const [searchQuery, setSearchQuery] = React.useState('')
   const [hoveredProject, setHoveredProject] = React.useState(null)
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
   
   const router = useRouter()
 
@@ -100,18 +101,23 @@ const Dashboard = ({ user, onOpenProject }) => {
       )}
 
       {/* ── Top Bar ── */}
-      <div style={{
+      <div className="responsive-topbar" style={{
         ...ds.topBar,
         background: darkMode ? 'rgba(10,10,12,0.6)' : 'rgba(255,255,255,0.7)',
         backdropFilter: 'blur(24px)',
         borderBottom: `1px solid ${darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
       }}>
-        <div style={ds.logo}>
-          <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg, #6366f1, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Sparkles size={14} color="#fff" />
+        <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
+          <button className="desktop-hidden" onClick={() => setIsSidebarOpen(true)} style={ds.actionIcon}>
+            <Menu size={20} color="var(--text-primary)" />
+          </button>
+          <div style={ds.logo}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg, #6366f1, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Sparkles size={14} color="#fff" />
+            </div>
+            <span style={ds.logoText}>TOLZY Canvas</span>
+            <div style={ds.betaBadge}>Beta</div>
           </div>
-          <span style={ds.logoText}>TOLZY Canvas</span>
-          <div style={ds.betaBadge}>Beta</div>
         </div>
         
         <div style={ds.topBarRight}>
@@ -189,10 +195,13 @@ const Dashboard = ({ user, onOpenProject }) => {
 
       <div style={ds.mainContent}>
         {/* ── Sidebar (Playlist / Projects) ── */}
-        <div style={{
+        {isSidebarOpen && (
+          <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />
+        )}
+        <div className={`responsive-sidebar ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`} style={{
           ...ds.sidebar,
-          background: darkMode ? 'rgba(14,14,16,0.3)' : 'rgba(255,255,255,0.4)',
-          backdropFilter: 'blur(16px)',
+          background: darkMode ? 'rgba(14,14,16,0.95)' : 'rgba(255,255,255,0.98)',
+          backdropFilter: 'blur(24px)',
           borderLeft: `1px solid ${darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
         }}>
           <div style={ds.sidebarHeader}>
@@ -255,7 +264,7 @@ const Dashboard = ({ user, onOpenProject }) => {
         </div>
 
         {/* ── Center ── */}
-        <div style={ds.center}>
+        <div className="responsive-center" style={ds.center}>
           <div style={{ maxWidth: '800px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 10 }}>
             
             <div style={{
@@ -269,12 +278,12 @@ const Dashboard = ({ user, onOpenProject }) => {
               تقديم TOLZY 2.0.1
             </div>
 
-            <h1 style={ds.heroText}>تخيل واجهة المستخدم القادمة بحرية.</h1>
-            <p style={{fontSize:'18px',color:'var(--text-secondary)',marginBottom:'48px',textAlign:'center',maxWidth:'600px',lineHeight:1.6}}>
+            <h1 className="responsive-hero-text" style={ds.heroText}>تخيل واجهة المستخدم القادمة بحرية.</h1>
+            <p className="responsive-hero-sub" style={{fontSize:'18px',color:'var(--text-secondary)',marginBottom:'48px',textAlign:'center',maxWidth:'600px',lineHeight:1.6}}>
               صف ما تريد بناءه وشاهد Tolzy AI يقوم بإنشائه في ثوانٍ معدودة. استمتع بتجربة تصميم لا مثيل لها.
             </p>
 
-            <div style={{
+            <div className="responsive-prompt-box" style={{
               ...ds.promptBox,
               background: darkMode ? 'rgba(20,20,22,0.6)' : 'rgba(255,255,255,0.8)',
               backdropFilter: 'blur(32px) saturate(200%)',

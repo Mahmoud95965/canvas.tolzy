@@ -44,10 +44,10 @@ const Auth = () => {
 
   return (
     <div style={styles.overlay}>
-      <div style={styles.modal}>
+      <div className="responsive-modal" style={styles.modal}>
         <div style={styles.header}>
-          <div style={styles.logo}>Tolzy</div>
-          <h2 style={styles.title}>{mode === 'login' ? 'Welcome back' : 'Create an account'}</h2>
+          <div className="responsive-logo" style={styles.logo}>Tolzy</div>
+          <h2 className="responsive-title" style={styles.title}>{mode === 'login' ? 'Welcome back' : 'Create an account'}</h2>
           <p style={styles.subtitle}>
             {mode === 'login' ? 'Sign in to continue your projects' : 'Start your creative journey with Tolzy'}
           </p>

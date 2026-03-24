@@ -264,3 +264,81 @@ input:focus, textarea:focus {
 .premium-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(128, 128, 128, 0.4);
 }
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 768px) {
+  .mobile-hidden {
+    display: none !important;
+  }
+  .desktop-hidden {
+    display: flex !important;
+  }
+  
+  /* Auth */
+  .responsive-modal {
+    padding: 24px !important;
+    gap: 20px !important;
+    margin: 16px;
+    width: auto !important;
+  }
+  .responsive-logo {
+    font-size: 24px !important;
+  }
+  .responsive-title {
+    font-size: 20px !important;
+  }
+
+  /* Dashboard */
+  .responsive-topbar {
+    padding: 0 16px !important;
+  }
+  .responsive-hero-text {
+    font-size: 32px !important;
+  }
+  .responsive-hero-sub {
+    font-size: 15px !important;
+    margin-bottom: 24px !important;
+  }
+  .responsive-prompt-box {
+    padding: 16px !important;
+  }
+  .responsive-sidebar {
+    position: fixed !important;
+    top: 0;
+    bottom: 0;
+    right: 0; /* Since RTL, sidebar is usually on the right logically */
+    z-index: 100 !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -4px 0 24px rgba(0,0,0,0.5);
+  }
+  .sidebar-closed {
+    transform: translateX(100%) !important;
+  }
+  .sidebar-open {
+    transform: translateX(0) !important;
+  }
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 90;
+    animation: fadeIn 0.2s ease-out;
+  }
+  .responsive-center {
+    padding: 0 16px !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .desktop-hidden {
+    display: none !important;
+  }
+  .sidebar-overlay {
+    display: none !important;
+  }
+}
+
