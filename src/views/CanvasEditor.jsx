@@ -10,6 +10,7 @@ import {
   Share2, Eye, Star, Play, User
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import MouseTrail from '../components/MouseTrail'
 
 const CanvasEditor = ({ project, user, onBack }) => {
   const router = useRouter()
@@ -489,6 +490,9 @@ const CanvasEditor = ({ project, user, onBack }) => {
           onWheel={onWheel}
           onClick={(e) => { if (e.target === canvasRef.current) setSelectedFrame(null) }}
         >
+          {/* White Mouse Trail */}
+          {darkMode && <MouseTrail color="#ffffff" />}
+
           {/* Frames Layer */}
           <div style={{
             position:'absolute', left:0, top:0, // Standard LTR absolute positioning

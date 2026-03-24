@@ -93,10 +93,9 @@ const Dashboard = ({ user, onOpenProject }) => {
       backgroundColor: darkMode ? '#070709' : '#f8f9fc',
       color: darkMode ? '#f0f0f2' : '#111113',
     }}>
-      {/* Ambient Orbs & Interactive Particles */}
+      {/* Ambient Orbs */}
       {darkMode && (
         <>
-          <ParticlesBackground />
           <div className="ambient-glow" style={{ top: '-10%', left: '-10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)' }} />
           <div className="ambient-glow" style={{ bottom: '-20%', right: '-10%', width: '60vw', height: '60vw', background: 'radial-gradient(circle, rgba(168,85,247,0.1) 0%, transparent 70%)' }} />
         </>
@@ -267,6 +266,7 @@ const Dashboard = ({ user, onOpenProject }) => {
 
         {/* ── Center ── */}
         <div className="responsive-center" style={ds.center}>
+          {darkMode && <ParticlesBackground />}
           <div style={{ maxWidth: '800px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 10 }}>
             
             <div style={{
