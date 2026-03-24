@@ -9,25 +9,45 @@ export default function MouseTrail({ color = '#ffffff' }) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     let animationFrameId;
+    let points = [];
     
-    // Resize to match parent container
+    // Correctly measure parent and fill the whole space with fixed points
     const resizeCanvas = () => {
       const parent = canvas.parentElement;
+      let newW = window.innerWidth;
+      let newH = window.innerHeight;
+      
       if (parent) {
-        canvas.width = parent.clientWidth;
-        canvas.height = parent.clientHeight;
-      } else {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        const rect = parent.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          newW = rect.width;
+          newH = rect.height;
+        }
+      }
+      
+      if (canvas.width !== newW || canvas.height !== newH) {
+        canvas.width = newW;
+        canvas.height = newH;
+        
+        // Generate fixed points based on screen density to fill space entirely
+        const newPoints = [];
+        const numPoints = Math.floor((newW * newH) / 1200); // Ensures it's uniformly dense (~1500 dots on big screens)
+        
+        for (let i = 0; i < numPoints; i++) {
+          newPoints.push({
+            x: Math.random() * newW,
+            y: Math.random() * newH,
+            size: Math.random() * 1.5 + 0.5,
+          });
+        }
+        points = newPoints;
       }
     };
 
     window.addEventListener('resize', resizeCanvas);
-    setTimeout(resizeCanvas, 0);
-
-    // Initialize scattered points
-    const points = [];
-    const numPoints = 800; // Massive points to fill the screen
+    
+    // Ensure parent DOM is fully rendered before measuring bounds
+    setTimeout(resizeCanvas, 50);
 
     let mouse = { x: -1000, y: -1000 };
     let targetMouse = { x: -1000, y: -1000 };
@@ -41,20 +61,12 @@ export default function MouseTrail({ color = '#ffffff' }) {
     window.addEventListener('mousemove', handleMouseMove);
 
     const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Lazily initialize points once canvas has bound dimensions
-      if (points.length === 0 && canvas.width > 0) {
-        for (let i = 0; i < numPoints; i++) {
-          points.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            size: Math.random() * 1.5 + 0.5, // Reduced size for subtlety
-            vx: (Math.random() - 0.5) * 0.15, // Slower movement
-            vy: (Math.random() - 0.5) * 0.15,
-          });
-        }
+      // Force initialization if resize was missed initially
+      if (points.length === 0 && canvas.parentElement) {
+        resizeCanvas();
       }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Smooth mouse follow
       mouse.x += (targetMouse.x - mouse.x) * 0.15;
@@ -70,25 +82,19 @@ export default function MouseTrail({ color = '#ffffff' }) {
       for (let i = 0; i < points.length; i++) {
         const p = points[i];
 
-        p.x += p.vx;
-        p.y += p.vy;
-
-        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-
         const dx = mouse.x - p.x;
         const dy = mouse.y - p.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        const maxDist = 500; // Huge flashlight radius to fill more space
+        const maxDist = 400; // Giant flashlight radius
         
-        let pointAlpha = 0.3; // Visibly fills the screen faintly
+        let pointAlpha = 0.15; // Visible everywhere faintly
         let isNearMouse = false;
 
         if (dist < maxDist) {
           isNearMouse = true;
           const distFactor = (1 - (dist / maxDist));
-          pointAlpha = Math.min(1, 0.3 + distFactor * 0.7); // Glows brightly when near
+          pointAlpha = Math.min(1, 0.15 + distFactor * 0.85); // Glows brightly when near
         }
 
         ctx.beginPath();
@@ -128,7 +134,7 @@ export default function MouseTrail({ color = '#ffffff' }) {
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
-        zIndex: 5, /* Placed slightly above grid but seamlessly in background */
+        zIndex: 0, 
         opacity: 1
       }}
     />
