@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 import ParticlesBackground from '../components/ParticlesBackground'
+import SpotlightContainer from '../components/SpotlightContainer'
 
 const Dashboard = ({ user, onOpenProject }) => {
   const [projects, setProjects] = React.useState([])
@@ -227,7 +228,7 @@ const Dashboard = ({ user, onOpenProject }) => {
             </div>
           </div>
 
-          <div style={ds.projectList} className="premium-scrollbar">
+          <SpotlightContainer style={ds.projectList} className="premium-scrollbar" spotlightColor="rgba(99,102,241,0.15)">
             {loading ? (
               <div style={{padding:'20px',textAlign:'center',color:'var(--text-muted)',fontSize:'13px'}}>جاري تحميل مساحة العمل...</div>
             ) : filteredProjects.length === 0 ? (
@@ -261,7 +262,7 @@ const Dashboard = ({ user, onOpenProject }) => {
                 )}
               </div>
             ))}
-          </div>
+          </SpotlightContainer>
         </div>
 
         {/* ── Center ── */}
@@ -330,7 +331,7 @@ const Dashboard = ({ user, onOpenProject }) => {
               </div>
             </div>
 
-            <div style={ds.suggestionsWrapper}>
+            <SpotlightContainer style={ds.suggestionsWrapper} spotlightColor="rgba(168,85,247,0.15)">
               {suggestions.map((s, idx) => (
                 <button key={idx} onClick={() => handleSubmitPrompt(null, s.prompt)} style={{
                   ...ds.suggPill,
@@ -341,7 +342,7 @@ const Dashboard = ({ user, onOpenProject }) => {
                   <ChevronRight size={14} style={{color:'var(--text-muted)'}} />
                 </button>
               ))}
-            </div>
+            </SpotlightContainer>
 
           </div>
         </div>
@@ -473,7 +474,10 @@ const ds = {
   projectList: {flex:1,overflowY:'auto',padding:'0 16px 24px 16px', display: 'flex', flexDirection: 'column', gap: '8px'},
   projectItem: {
     display:'flex',alignItems:'center',gap:'14px',padding:'12px',
-    borderRadius:'16px',cursor:'pointer', position: 'relative'
+    borderRadius:'16px',cursor:'pointer', position: 'relative',
+    background: 'rgba(255,255,255,0.02)',
+    border: '1px solid rgba(255,255,255,0.05)',
+    transition: 'background 0.2s', margin: '4px 0'
   },
   projectThumb: {
     width:'44px',height:'44px',borderRadius:'12px',
