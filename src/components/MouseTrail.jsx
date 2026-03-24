@@ -27,7 +27,7 @@ export default function MouseTrail({ color = '#ffffff' }) {
 
     // Initialize scattered points
     const points = [];
-    const numPoints = 120; // Reduced dot count
+    const numPoints = 350; // Dense dots for flashlight effect
 
     let mouse = { x: -1000, y: -1000 };
     let targetMouse = { x: -1000, y: -1000 };
@@ -106,15 +106,6 @@ export default function MouseTrail({ color = '#ffffff' }) {
         
         ctx.fill();
         ctx.shadowBlur = 0; // Reset
-
-        if (lineAlpha > 0) {
-          ctx.beginPath();
-          ctx.moveTo(p.x, p.y);
-          ctx.lineTo(mouse.x, mouse.y);
-          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${lineAlpha})`;
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        }
       }
 
       animationFrameId = requestAnimationFrame(render);

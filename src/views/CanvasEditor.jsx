@@ -11,7 +11,6 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import MouseTrail from '../components/MouseTrail'
-import SpotlightContainer from '../components/SpotlightContainer'
 
 const CanvasEditor = ({ project, user, onBack }) => {
   const router = useRouter()
@@ -474,7 +473,7 @@ const CanvasEditor = ({ project, user, onBack }) => {
         )}
 
         {/* ── Canvas ── */}
-        <SpotlightContainer style={{ flex:1, display:'flex' }} spotlightColor={darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)"}>
+        <div style={{ flex:1, display:'flex', position:'relative', overflow:'hidden' }}>
           <div
             ref={canvasRef}
             style={{
@@ -580,7 +579,7 @@ const CanvasEditor = ({ project, user, onBack }) => {
             </div>
           )}
           </div>
-        </SpotlightContainer>
+        </div>
 
         {/* ── Right Toolbar (Floating) ── */}
         <div style={{
