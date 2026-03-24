@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import MouseTrail from '../components/MouseTrail'
+import SpotlightContainer from '../components/SpotlightContainer'
 
 const CanvasEditor = ({ project, user, onBack }) => {
   const router = useRouter()
@@ -473,17 +474,15 @@ const CanvasEditor = ({ project, user, onBack }) => {
         )}
 
         {/* ── Canvas ── */}
-        <div
-          ref={canvasRef}
-          style={{
-            flex:1, position:'relative', overflow:'hidden',
-            cursor: activeTool === 'hand' || isPanning ? 'grab' : 'default',
-            backgroundImage: `radial-gradient(circle, ${darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)'} 1px, transparent 1px)`,
-            backgroundSize: `${20 * zoom / 100}px ${20 * zoom / 100}px`,
-            backgroundPosition: `${canvasOffset.x}px ${canvasOffset.y}px`,
-            direction: 'ltr' /* Force LTR so X/Y coords behave normally and match mouse deltas */
-          }}
-          onMouseDown={onCanvasMouseDown}
+        <SpotlightContainer style={{ flex:1, display:'flex' }} spotlightColor={darkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)"}>
+          <div
+            ref={canvasRef}
+            style={{
+              flex:1, position:'relative', overflow:'hidden',
+              cursor: activeTool === 'hand' || isPanning ? 'grab' : 'default',
+              direction: 'ltr'
+            }}
+            onMouseDown={onCanvasMouseDown}
           onMouseMove={onCanvasMouseMove}
           onMouseUp={onCanvasMouseUp}
           onMouseLeave={onCanvasMouseUp}
@@ -580,7 +579,8 @@ const CanvasEditor = ({ project, user, onBack }) => {
               <div style={{marginTop:'20px',fontSize:'15px',fontWeight:600,color:'var(--text-primary)'}}>جاري إنشاء وتصميم الواجهة...</div>
             </div>
           )}
-        </div>
+          </div>
+        </SpotlightContainer>
 
         {/* ── Right Toolbar (Floating) ── */}
         <div style={{

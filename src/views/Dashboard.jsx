@@ -228,7 +228,7 @@ const Dashboard = ({ user, onOpenProject }) => {
             </div>
           </div>
 
-          <SpotlightContainer style={ds.projectList} className="premium-scrollbar" spotlightColor="rgba(99,102,241,0.15)">
+          <div style={ds.projectList} className="premium-scrollbar">
             {loading ? (
               <div style={{padding:'20px',textAlign:'center',color:'var(--text-muted)',fontSize:'13px'}}>جاري تحميل مساحة العمل...</div>
             ) : filteredProjects.length === 0 ? (
@@ -262,7 +262,7 @@ const Dashboard = ({ user, onOpenProject }) => {
                 )}
               </div>
             ))}
-          </SpotlightContainer>
+          </div>
         </div>
 
         {/* ── Center ── */}
@@ -331,7 +331,7 @@ const Dashboard = ({ user, onOpenProject }) => {
               </div>
             </div>
 
-            <SpotlightContainer style={ds.suggestionsWrapper} spotlightColor="rgba(168,85,247,0.15)">
+            <div style={ds.suggestionsWrapper}>
               {suggestions.map((s, idx) => (
                 <button key={idx} onClick={() => handleSubmitPrompt(null, s.prompt)} style={{
                   ...ds.suggPill,
@@ -342,7 +342,7 @@ const Dashboard = ({ user, onOpenProject }) => {
                   <ChevronRight size={14} style={{color:'var(--text-muted)'}} />
                 </button>
               ))}
-            </SpotlightContainer>
+            </div>
 
           </div>
         </div>
