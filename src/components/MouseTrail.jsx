@@ -27,7 +27,7 @@ export default function MouseTrail({ color = '#ffffff' }) {
 
     // Initialize scattered points
     const points = [];
-    const numPoints = 350; // Dense dots for flashlight effect
+    const numPoints = 800; // Massive points to fill the screen
 
     let mouse = { x: -1000, y: -1000 };
     let targetMouse = { x: -1000, y: -1000 };
@@ -80,17 +80,15 @@ export default function MouseTrail({ color = '#ffffff' }) {
         const dy = mouse.y - p.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        const maxDist = 200; 
+        const maxDist = 500; // Huge flashlight radius to fill more space
         
-        let pointAlpha = 0.15; // Base visibility everywhere
-        let lineAlpha = 0;
+        let pointAlpha = 0.3; // Visibly fills the screen faintly
         let isNearMouse = false;
 
         if (dist < maxDist) {
           isNearMouse = true;
           const distFactor = (1 - (dist / maxDist));
-          pointAlpha = Math.min(1, 0.15 + distFactor * 0.85); // Glow up when near
-          lineAlpha = Math.min(1, distFactor * 0.4); // Line opacity
+          pointAlpha = Math.min(1, 0.3 + distFactor * 0.7); // Glows brightly when near
         }
 
         ctx.beginPath();
