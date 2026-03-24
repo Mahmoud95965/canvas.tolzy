@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import MobileBlocker from "../components/MobileBlocker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -78,7 +79,10 @@ export default function RootLayout({ children }) {
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <MobileBlocker />
+        {children}
+      </body>
     </html>
   );
 }

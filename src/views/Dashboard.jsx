@@ -9,6 +9,7 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../lib/supabase'
+import ParticlesBackground from '../components/ParticlesBackground'
 
 const Dashboard = ({ user, onOpenProject }) => {
   const [projects, setProjects] = React.useState([])
@@ -92,9 +93,10 @@ const Dashboard = ({ user, onOpenProject }) => {
       backgroundColor: darkMode ? '#070709' : '#f8f9fc',
       color: darkMode ? '#f0f0f2' : '#111113',
     }}>
-      {/* Ambient Orbs */}
+      {/* Ambient Orbs & Interactive Particles */}
       {darkMode && (
         <>
+          <ParticlesBackground />
           <div className="ambient-glow" style={{ top: '-10%', left: '-10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)' }} />
           <div className="ambient-glow" style={{ bottom: '-20%', right: '-10%', width: '60vw', height: '60vw', background: 'radial-gradient(circle, rgba(168,85,247,0.1) 0%, transparent 70%)' }} />
         </>
