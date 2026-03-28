@@ -1,5 +1,5 @@
-const PRIMARY_MODEL = 'qwen/qwen3-235b-a22b-2507';
-const FALLBACK_MODEL = 'google/gemini-2.0-flash-exp:free';
+const PRIMARY_MODEL = 'moonshotai/kimi-k2.5';
+const FALLBACK_MODEL = 'moonshotai/kimi-k2.5';
 
 const SYSTEM_PROMPT = `You are Tolzy AI, a world-class UI/UX designer and frontend engineer. 
 Your goal is to create stunning, premium, and functional web components or pages based on user prompts.
@@ -19,31 +19,45 @@ export async function POST(req) {
       return new Response(JSON.stringify({ error: 'API key is not configured' }), { status: 500 });
     }
 
-    const makeRequest = async (model) => {
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://tolzy.me',
-          'X-Title': 'Tolzy AI',
-        },
-        body: JSON.stringify({
+    const makeRequest = (model) => {
+      return new Promise((resolve, reject) => {
+        const payload = JSON.stringify({
           model,
           stream: true,
-          include_reasoning: true,
-          max_tokens: 16000,
+          max_tokens: 8000,
           messages: [
             { role: 'system', content: systemPrompt || SYSTEM_PROMPT },
             { role: 'user', content: prompt }
           ],
-        }),
-      });
+        });
 
-      if (!response.ok) {
-        throw new Error(`Model ${model} failed with status ${response.status}`);
-      }
-      return response;
+        const req = require('https').request({
+          hostname: 'openrouter.ai',
+          port: 443,
+          path: '/api/v1/chat/completions',
+          method: 'POST',
+          family: 4, // Force IPv4
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://tolzy.me',
+            'X-Title': 'Tolzy AI',
+            'Content-Length': Buffer.byteLength(payload)
+          }
+        }, (res) => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve({ ok: true, body: res });
+          } else {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => reject(new Error(`Model ${model} failed: ${res.statusCode} — ${data.slice(0, 200)}`)));
+          }
+        });
+
+        req.on('error', e => reject(e));
+        req.write(payload);
+        req.end();
+      });
     };
 
     let upstreamResponse;
@@ -54,27 +68,19 @@ export async function POST(req) {
       upstreamResponse = await makeRequest(FALLBACK_MODEL);
     }
 
-    // Stream the response back to the client
     const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-    const reader = upstreamResponse.body.getReader();
-
     const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-              controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-              controller.close();
-              break;
-            }
-            // Forward the chunk as-is
-            controller.enqueue(value);
-          }
-        } catch (e) {
+      start(controller) {
+        upstreamResponse.body.on('data', chunk => {
+          controller.enqueue(chunk);
+        });
+        upstreamResponse.body.on('end', () => {
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          controller.close();
+        });
+        upstreamResponse.body.on('error', e => {
           controller.error(e);
-        }
+        });
       }
     });
 

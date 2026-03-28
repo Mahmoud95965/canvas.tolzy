@@ -1,19 +1,20 @@
 'use client';
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '../lib/supabase'
+import { auth } from '../lib/firebase'
+import { onAuthStateChanged } from 'firebase/auth'
 import Onboarding from '../components/Onboarding'
 
 export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
         router.replace('/dashboard')
       }
-      // If no session, stay here and show Onboarding
     })
+    return () => unsubscribe()
   }, [])
 
   return <Onboarding onGetStarted={() => router.push('/auth')} />

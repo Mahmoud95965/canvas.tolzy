@@ -1,24 +1,18 @@
 'use client';
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '../../lib/supabase'
+import { auth } from '../../lib/firebase'
+import { onAuthStateChanged } from 'firebase/auth'
 import Auth from '../../components/Auth'
 
 export default function AuthPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // If already logged in, redirect to dashboard
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.replace('/dashboard')
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) router.replace('/dashboard')
     })
-
-    // Listen for login success
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) router.replace('/dashboard')
-    })
-
-    return () => subscription.unsubscribe()
+    return () => unsubscribe()
   }, [])
 
   return <Auth />

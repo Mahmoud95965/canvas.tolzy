@@ -1,20 +1,29 @@
 'use client';
-import Link from 'next/link'
-import { Sparkles, Shield, ArrowRight, ChevronLeft } from 'lucide-react'
+import React from 'react';
+import Link from 'next/link';
+import { Sparkles, Shield, ArrowRight, ChevronLeft, Lock, Eye, ShieldCheck, Globe } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+const AURORA_KEYFRAMES = `
+  @keyframes auroraBG {
+    0%, 100% { opacity: 0.2; transform: translate(0,0); }
+    50% { opacity: 0.4; transform: translate(20px, -20px); }
+  }
+`;
 
 const SECTIONS = [
   {
     title: 'جمع المعلومات',
-    icon: '📋',
+    icon: <Eye size={20} />,
     content: [
       'نجمع المعلومات التي تقدمها أثناء التسجيل مثل الاسم وعنوان البريد الإلكتروني.',
       'نجمع بيانات الاستخدام بشكل تلقائي مثل نوع المتصفح وعنوان IP ووقت الوصول.',
-      'يمكننا جمع بيانات عن التصاميم والمشاريع التي تنشئها داخل TOLZY Canvas.',
+      'يمكننا جمع بيانات عن التصاميم والمشاريع التي تنشئها داخل Tolzy Studio.',
     ]
   },
   {
     title: 'كيفية استخدام المعلومات',
-    icon: '⚙️',
+    icon: <Globe size={20} />,
     content: [
       'تشغيل المنصة وتوفير الخدمات المطلوبة وتعزيز تجربة المستخدم.',
       'تحسين جودة الذكاء الاصطناعي وتطوير النماذج بناءً على أنماط الاستخدام المجهولة.',
@@ -24,123 +33,108 @@ const SECTIONS = [
   },
   {
     title: 'مشاركة المعلومات',
-    icon: '🔗',
+    icon: <ArrowRight size={20} />,
     content: [
       'لا نبيع أو نأجر بياناتك الشخصية لأطراف ثالثة في أي ظرف.',
       'قد نشارك البيانات مع مزودي الخدمة الموثوقين الذين يساعدوننا في تشغيل المنصة.',
-      'قد نكشف عن المعلومات إذا طلب ذلك القانون أو لحماية حقوق TOLZY والمستخدمين.',
+      'قد نكشف عن المعلومات إذا طلب ذلك القانون أو لحماية حقوق Tolzy والمستخدمين.',
     ]
   },
   {
     title: 'أمان البيانات',
-    icon: '🔒',
+    icon: <Lock size={20} />,
     content: [
       'نستخدم تشفير SSL/TLS لجميع البيانات المنقولة بين متصفحك وخوادمنا.',
-      'نعتمد على Supabase كقاعدة بيانات آمنة ومعتمدة بمعايير دولية عالية.',
+      'نعتمد على تقنيات سحابية آمنة ومعتمدة بمعايير دولية عالية لحماية بياناتك.',
       'نُجري مراجعات أمنية دورية لضمان سلامة بياناتك باستمرار.',
     ]
   },
   {
     title: 'حقوق المستخدم',
-    icon: '⚖️',
+    icon: <ShieldCheck size={20} />,
     content: [
       'يحق لك الوصول إلى بياناتك الشخصية وتعديلها أو حذفها في أي وقت.',
       'يمكنك طلب تصدير نسخة كاملة من بياناتك بتنسيق قابل للقراءة.',
       'يمكنك إلغاء حسابك وطلب حذف جميع بياناتك نهائياً.',
     ]
-  },
-  {
-    title: 'ملفات تعريف الارتباط',
-    icon: '🍪',
-    content: [
-      'نستخدم ملفات تعريف الارتباط (Cookies) للحفاظ على جلسة تسجيل الدخول.',
-      'بعض ملفات تعريف الارتباط ضرورية لتشغيل المنصة بشكل صحيح.',
-      'يمكنك ضبط إعدادات المتصفح لرفض ملفات الارتباط، مع ملاحظة تأثير ذلك على الأداء.',
-    ]
-  },
-]
+  }
+];
 
 export default function PrivacyPage() {
+  const router = useRouter();
+
   return (
-    <div style={{ minHeight: '100vh', background: '#05050a', color: '#f2f2f5', direction: 'rtl', fontFamily: "'Cairo','Inter',sans-serif" }}>
+    <div style={{
+      minHeight: '100vh', background: '#07070a', color: '#fff',
+      direction: 'rtl', fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
+      position: 'relative', overflowX: 'hidden'
+    }}>
+      <style>{AURORA_KEYFRAMES}</style>
 
-      {/* Ambient BG */}
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-        <div style={{ position: 'absolute', top: '-30%', right: '-10%', width: '70vw', height: '70vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)' }} />
-        <div style={{ position: 'absolute', bottom: '-20%', left: '-10%', width: '50vw', height: '50vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(168,85,247,0.06) 0%, transparent 70%)' }} />
+      {/* ── Background Effects ── */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', top: '10%', left: '-5%', width: '60vw', height: '60vw', background: 'radial-gradient(circle, rgba(99,102,241,0.1), transparent 70%)', filter: 'blur(100px)', animation: 'auroraBG 15s infinite' }} />
+        <div style={{ position: 'absolute', bottom: '0', right: '-10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(168,85,247,0.08), transparent 70%)', filter: 'blur(120px)', animation: 'auroraBG 20s infinite reverse' }} />
       </div>
 
-      {/* Header */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 50, height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 40px', background: 'rgba(5,5,10,0.8)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: 30, height: 30, borderRadius: 9, background: 'linear-gradient(135deg,#6366f1,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(99,102,241,0.4)' }}>
-            <Sparkles size={15} color="#fff" />
+      {/* ── Header ── */}
+      <header style={{
+        position: 'sticky', top: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '16px 40px', background: 'rgba(7,7,10,0.5)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(255,255,255,0.05)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => router.push('/')}>
+          <div style={{ width: 30, height: 30, borderRadius: '8px', background: 'linear-gradient(135deg, #6366f1, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Sparkles size={16} color="#fff" />
           </div>
-          <span style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '-0.02em' }}>TOLZY Canvas</span>
+          <span style={{ fontSize: '18px', fontWeight: 900, letterSpacing: '-0.02em' }}>TOLZY</span>
         </div>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.5)', transition: 'color 0.2s' }}
-          onMouseEnter={e => e.currentTarget.style.color = '#818cf8'}
-          onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
-        >
-          <ChevronLeft size={15} />
-          العودة للرئيسية
+        <Link href="/" style={{ fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+           <ChevronLeft size={14} /> العودة للرئيسية
         </Link>
-      </div>
+      </header>
 
-      {/* Hero */}
-      <div style={{ position: 'relative', zIndex: 1, padding: '80px 40px 60px', textAlign: 'center' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 18px', borderRadius: '99px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', marginBottom: '20px', fontSize: '12px', fontWeight: 700, color: '#818cf8' }}>
-          <Shield size={13} /> سياسة الخصوصية
+      {/* ── Hero ── */}
+      <div style={{ position: 'relative', zIndex: 1, padding: '100px 24px 60px', textAlign: 'center' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '99px', background: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.2)', marginBottom: '24px', color: '#818cf8', fontSize: '12px', fontWeight: 700 }}>
+          <Shield size={14} /> سياسة الخصوصية والأمان
         </div>
-        <h1 style={{ fontSize: 'clamp(36px, 5vw, 60px)', fontWeight: 900, letterSpacing: '-0.04em', marginBottom: '16px' }}>
-          كيف نحمي بياناتك
-          <span style={{ display: 'block', background: 'linear-gradient(135deg,#818cf8,#c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>وخصوصيتك</span>
-        </h1>
-        <p style={{ fontSize: '17px', color: 'rgba(255,255,255,0.45)', maxWidth: '520px', margin: '0 auto', lineHeight: 1.7 }}>
-          نحن نأخذ خصوصيتك بجدية تامة. هذه السياسة توضح بشفافية كاملة ما نجمعه وكيف نستخدمه.
+        <h1 style={{ fontSize: 'clamp(36px, 6vw, 56px)', fontWeight: 900, marginBottom: '20px', letterSpacing: '-0.03em' }}>نحن نقدر <span style={{ color: '#818cf8' }}>خصوصيتك</span></h1>
+        <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.5)', maxWidth: '600px', margin: '0 auto', lineHeight: 1.7 }}>
+          بياناتك هي أمانة لدينا. هذه السياسة توضح كيف نقوم بحماية معلوماتك الشخصية وضمان خصوصيتك أثناء استخدام منصة Tolzy.
         </p>
-        <div style={{ marginTop: '16px', fontSize: '12px', color: 'rgba(255,255,255,0.25)', fontWeight: 600 }}>
-          آخر تحديث: مارس 2026
-        </div>
       </div>
 
-      {/* Content */}
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: '860px', margin: '0 auto', padding: '0 40px 80px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        {SECTIONS.map((s, i) => (
-          <div key={i} style={{
-            background: 'rgba(14,14,22,0.7)', backdropFilter: 'blur(24px)',
-            borderRadius: '20px', padding: '28px 32px',
-            border: '1px solid rgba(255,255,255,0.07)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-            animation: `fadeUp 0.6s ${i * 0.06}s both ease`
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
-              <span style={{ fontSize: '22px' }}>{s.icon}</span>
-              <h2 style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '-0.02em' }}>{s.title}</h2>
+      {/* ── Content ── */}
+      <main style={{ position: 'relative', zIndex: 1, maxWidth: '800px', margin: '0 auto', padding: '0 24px 120px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {SECTIONS.map((s, i) => (
+            <div key={i} style={{
+              padding: '32px', borderRadius: '28px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+              backdropFilter: 'blur(20px)', animation: 'fadeUp 0.8s ease backwards'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
+                <div style={{ width: 44, height: 44, borderRadius: '12px', background: 'rgba(99,102,241,0.1)', color: '#818cf8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {s.icon}
+                </div>
+                <h2 style={{ fontSize: '20px', fontWeight: 800 }}>{s.title}</h2>
+              </div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {s.content.map((item, j) => (
+                  <li key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', color: 'rgba(255,255,255,0.5)', fontSize: '15px', lineHeight: 1.7 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#6366f1', marginTop: '10px', flexShrink: 0 }} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {s.content.map((item, j) => (
-                <li key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '15px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#6366f1', flexShrink: 0, marginTop: '9px' }} />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-
-        {/* Contact box */}
-        <div style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(168,85,247,0.08))', borderRadius: '20px', padding: '32px', border: '1px solid rgba(99,102,241,0.2)', textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', marginBottom: '12px' }}>📩</div>
-          <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '8px' }}>هل لديك أسئلة؟</h3>
-          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginBottom: '20px', lineHeight: 1.6 }}>
-            إذا كانت لديك أي استفسارات حول سياسة الخصوصية، لا تتردد في التواصل معنا.
-          </p>
-          <a href="https://tolzy.me/contact" target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 28px', borderRadius: '99px', background: 'linear-gradient(135deg,#6366f1,#a855f7)', color: '#fff', fontSize: '14px', fontWeight: 700, boxShadow: '0 8px 24px rgba(99,102,241,0.4)', transition: 'all 0.2s' }}>
-            تواصل معنا <ArrowRight size={15} />
-          </a>
+          ))}
         </div>
-      </div>
+      </main>
+
+      {/* ── Footer ── */}
+      <footer style={{ padding: '60px 24px', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '13px' }}>
+        © 2026 جميع الحقوق محفوظة لمنصة Tolzy لتقنيات الذكاء الاصطناعي
+      </footer>
     </div>
-  )
+  );
 }

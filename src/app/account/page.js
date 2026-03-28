@@ -1,5 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
+import { auth } from '../../lib/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { supabase } from '../../lib/supabase';
 import { LogOut, ArrowRight, User } from 'lucide-react';
 import Link from 'next/link';
@@ -11,19 +13,23 @@ export default function AccountPage() {
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session) {
-        setUser(session.user);
-        const { count } = await supabase.from('projects').select('*', { count: 'exact', head: true });
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      if (fbUser) {
+        const mappedUser = { ...fbUser, id: fbUser.uid };
+        setUser(mappedUser);
+        const { count } = await supabase.from('projects')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', mappedUser.id);
         setProjectsCount(count || 0);
       } else {
         router.push('/');
       }
     });
+    return () => unsubscribe();
   }, [router]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await signOut(auth);
     router.push('/');
   };
 
@@ -47,7 +53,7 @@ export default function AccountPage() {
             </div>
             <div>
               <div style={{fontSize:'24px', fontWeight:700}}>
-                {user.user_metadata?.full_name || user.user_metadata?.name || user.email.split('@')[0]}
+                {user.displayName || user.email.split('@')[0]}
               </div>
               <div style={{color:'#a1a1aa', marginTop:'4px', fontSize:'14px'}}>مصمم واجهات مستقل بمنصة Tolzy</div>
             </div>
@@ -64,7 +70,7 @@ export default function AccountPage() {
               <div>
                 <div style={{fontSize:'13px', color:'#71717a', fontWeight:600, marginBottom:'8px'}}>آخر تسجيل دخول</div>
                 <div style={{background:'rgba(255,255,255,0.03)', padding:'14px 16px', borderRadius:'12px', fontSize:'14px', fontWeight:500, border:'1px solid rgba(255,255,255,0.05)', textAlign:'right'}} dir="ltr">
-                  {new Date(user.last_sign_in_at).toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' })}
+                  {user.metadata.lastSignInTime ? new Date(user.metadata.lastSignInTime).toLocaleString('ar-EG', { dateStyle:'medium', timeStyle:'short' }) : 'غير متوفر'}
                 </div>
               </div>
             </div>
@@ -82,7 +88,7 @@ export default function AccountPage() {
             <div>
               <div style={{fontSize:'13px', color:'#71717a', fontWeight:600, marginBottom:'8px'}}>تاريخ الانضمام وبداية النشاط</div>
               <div style={{background:'rgba(255,255,255,0.03)', padding:'14px 16px', borderRadius:'12px', fontSize:'15px', fontWeight:500, border:'1px solid rgba(255,255,255,0.05)'}}>
-                {new Date(user.created_at).toLocaleDateString('ar-EG', { dateStyle:'long' })}
+                {user.metadata.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString('ar-EG', { dateStyle:'long' }) : 'غير متوفر'}
               </div>
             </div>
           </div>

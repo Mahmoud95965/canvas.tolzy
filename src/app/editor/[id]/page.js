@@ -1,40 +1,43 @@
 'use client';
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { auth } from '../../../lib/firebase'
+import { onAuthStateChanged } from 'firebase/auth'
 import { supabase } from '../../../lib/supabase'
 import CanvasEditor from '../../../views/CanvasEditor'
 
 export default function EditorPage() {
   const router = useRouter()
   const { id } = useParams()
-  const [session, setSession] = useState(null)
+  const [user, setUser] = useState(null)
   const [project, setProject] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const initRef = useRef(false)
 
   useEffect(() => {
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) { router.replace('/auth'); return }
-      setSession(session)
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      if (!fbUser) {
+        router.replace('/auth')
+        return
+      }
+      
+      const mappedUser = { ...fbUser, id: fbUser.uid }
+      setUser(mappedUser)
 
-      if (id) {
-        const { data, error } = await supabase.from('projects').select('*').eq('id', id).single()
-        if (error || !data) {
+      if (id && !initRef.current) {
+        initRef.current = true
+        const { data, error: fetchError } = await supabase.from('projects').select('*').eq('id', id).single()
+        if (fetchError || !data) {
           setError('لم يتم العثور على المشروع')
         } else {
           setProject(data)
         }
+        setLoading(false)
       }
-      setLoading(false)
-    }
-    init()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) router.replace('/auth')
     })
 
-    return () => subscription.unsubscribe()
+    return () => unsubscribe()
   }, [id])
 
   if (loading) return (
@@ -51,7 +54,7 @@ export default function EditorPage() {
     </div>
   )
 
-  if (!session || !project) return null
+  if (!user || !project) return null
 
-  return <CanvasEditor project={project} user={session.user} onBack={() => router.push('/dashboard')} />
+  return <CanvasEditor project={project} user={user} onBack={() => router.push('/dashboard')} />
 }

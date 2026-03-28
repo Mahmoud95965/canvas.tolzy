@@ -1,30 +1,25 @@
 'use client';
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '../../lib/supabase'
+import { auth } from '../../lib/firebase'
+import { onAuthStateChanged } from 'firebase/auth'
 import Dashboard from '../../views/Dashboard'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const [session, setSession] = useState(null)
+  const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
         router.replace('/auth')
       } else {
-        setSession(session)
+        setUser(user)
       }
       setLoading(false)
     })
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) router.replace('/auth')
-      else setSession(session)
-    })
-
-    return () => subscription.unsubscribe()
+    return () => unsubscribe()
   }, [])
 
   const handleOpenProject = (project) => {
@@ -40,7 +35,14 @@ export default function DashboardPage() {
     </div>
   )
 
-  if (!session) return null
+  if (!user) return null
 
-  return <Dashboard user={session.user} onOpenProject={handleOpenProject} />
+  // Safely map Firebase user fields
+  const userMapped = { 
+    id: user.uid, 
+    uid: user.uid, 
+    email: user.email, 
+    displayName: user.displayName 
+  };
+  return <Dashboard user={userMapped} onOpenProject={handleOpenProject} />
 }
