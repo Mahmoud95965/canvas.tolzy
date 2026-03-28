@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import Link from 'next/link';
-import { Sparkles, Book, ChevronLeft, Zap, Code, Layout, Rocket, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, Book, ChevronLeft, Zap, Code, Layout, Rocket, Image as ImageIcon, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const AURORA_KEYFRAMES = `
