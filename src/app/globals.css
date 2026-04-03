@@ -798,6 +798,19 @@ input, textarea, select {
   to { transform: rotate(360deg); }
 }
 
+/* 🚀 ELITE UI: Sandpack Code Wrapping Fix */
+.sp-cm-editor .cm-content, 
+.sp-cm-editor .cm-line {
+  white-space: pre-wrap !important;
+  word-break: break-all !important;
+}
+
+.sp-wrapper .sp-layout {
+  border: none !important;
+  background: transparent !important;
+}
+
+
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 20px rgba(108, 92, 231, 0.1); }
   50% { box-shadow: 0 0 40px rgba(108, 92, 231, 0.3); }

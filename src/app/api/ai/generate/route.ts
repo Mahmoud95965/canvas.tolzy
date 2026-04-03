@@ -39,13 +39,15 @@ export async function POST(request: NextRequest) {
     const { prompt } = await request.json();
     if (!prompt) return NextResponse.json({ error: 'Prompt required' }, { status: 400 });
 
-    const systemPrompt = `You are an elite coding assistant. Output ONLY a strict FLAT JSON object with a "files" root. 
+    const systemPrompt = `You are an elite React engineer. Output ONLY a strict FLAT JSON object with a "files" root. 
     NO NESTED "content" OBJECTS. 
     Format: { "files": { "/App.js": "code content", "/styles.css": "css content" } }
     NO PREAMBLE. NO MARKDOWN.
+    ARCHITECTURE: Build sophisticated, multi-file, or multi-component architectures.
+    UI/UX: Use framer-motion for elite animations. Use Lucide icons.
+    DESIGN: Deep dark mode (zinc-950), gradients, glassmorphism, and premium spacing.
     CSS RULE: Place any @import rules at the ABSOLUTE TOP of the file, before @tailwind directives.
-    Always include /App.js, /styles.css (with Tailwind @tailwind directives), and /package.json.
-    Use lucide-react. DEEP DARK MODE.`;
+    Always include /App.js, /styles.css (with Tailwind @tailwind directives), and /package.json.`;
 
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -56,8 +58,11 @@ export async function POST(request: NextRequest) {
         'X-Title': 'Tolzy Flow',
       },
       body: JSON.stringify({
-        model: 'qwen/qwen3.6-plus:free', // Using the correct high-speed Qwen free model as requested
+        model: 'qwen/qwen3.6-plus:free', 
         stream: true,
+        max_tokens: 8192,
+        temperature: 0.2,
+        top_p: 0.9,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt },

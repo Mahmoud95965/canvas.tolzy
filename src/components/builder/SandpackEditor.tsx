@@ -92,7 +92,7 @@ export default function App() {
   '/styles.css':
     '@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\nbody {\n  margin: 0;\n  padding: 0;\n  font-family: system-ui, -apple-system, sans-serif;\n}',
   '/package.json':
-    '{\n  "main": "/index.js",\n  "dependencies": {\n    "react": "^18.0.0",\n    "react-dom": "^18.0.0",\n    "lucide-react": "latest"\n  }\n}',
+    '{\n  "main": "/index.js",\n  "dependencies": {\n    "react": "^18.0.0",\n    "react-dom": "^18.0.0",\n    "lucide-react": "latest",\n    "framer-motion": "latest"\n  }\n}',
 };
 
 export default function SandpackEditor({ site }: SandpackEditorProps) {
@@ -170,32 +170,60 @@ export default function SandpackEditor({ site }: SandpackEditorProps) {
     alert('Link copied to clipboard!');
   };
 
-  // Parse AI JSON
+  // 🛠️ HEALING PARSER: More resilient extraction for elite-tier code
   function parseAIResponse(raw: string): Record<string, string> | null {
     try {
-      let cleaned = raw.trim();
-      
+      // 1. Try standard parse first
+      const standardResult = tryStandardParse(raw);
+      if (standardResult) return standardResult;
+
+      // 2. If failed, try to fix common truncation by adding closing braces
+      const fixedRaw = raw.trim() + '\n"}}}'; // Bruteforce closure
+      const fixedResult = tryStandardParse(fixedRaw);
+      if (fixedResult) return fixedResult;
+
+      // 3. Last resort: Regex extraction for file pairs
+      return regexExtractFiles(raw);
+    } catch { return null; }
+  }
+
+  function tryStandardParse(text: string): Record<string, string> | null {
+    try {
+      let cleaned = text.trim();
       const start = cleaned.indexOf('{');
       const end = cleaned.lastIndexOf('}');
-      if (start === -1 || end === -1 || end < start) return null;
-      
+      if (start === -1 || end === -1) return null;
       cleaned = cleaned.substring(start, end + 1);
       
       const parsed = JSON.parse(cleaned);
-      if (parsed.files && typeof parsed.files === 'object') {
+      const files = parsed.files || parsed;
+      if (files && typeof files === 'object') {
         const result: Record<string, string> = {};
-        for (const [path, content] of Object.entries(parsed.files)) {
-          if (typeof content === 'string') {
-            result[path] = content;
-          } else if (content && typeof content === 'object' && (content as any).content) {
-            // Handle nested { content: "..." } structure
+        for (const [path, content] of Object.entries(files)) {
+          if (typeof content === 'string') result[path] = content;
+          else if (content && typeof content === 'object' && (content as any).content) {
             result[path] = (content as any).content;
           }
         }
         return Object.keys(result).length > 0 ? result : null;
       }
-      return null;
     } catch { return null; }
+    return null;
+  }
+
+  function regexExtractFiles(text: string): Record<string, string> | null {
+    const result: Record<string, string> = {};
+    // This regex looks for "/path": "content" pattern
+    // It handles the most common flat structure
+    const regex = /"(\/[^"]+)":\s*"([^]*?)(?=",\s*"\/?|$)/g;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      let content = match[2];
+      // Basic unescape for newlines if they are literal \n
+      content = content.replace(/\\n/g, '\n').replace(/\\"/g, '"');
+      result[match[1]] = content;
+    }
+    return Object.keys(result).length > 0 ? result : null;
   }
 
   // Stream AI
@@ -239,51 +267,53 @@ export default function SandpackEditor({ site }: SandpackEditorProps) {
         }));
       }
 
-      // Remove the temporary file before final parsing
-      setFiles(prev => {
-        const next = { ...prev };
-        delete next['/Generating...'];
-        return next;
-      });
-
       const parsedFiles = parseAIResponse(fullText);
+      
       if (parsedFiles) {
-        if (!parsedFiles['/styles.css']) {
-          parsedFiles['/styles.css'] = DEFAULT_FILES['/styles.css'];
-        }
+        // Prepare the final file set
+        const finalFiles = { ...parsedFiles };
         
-        // Force inject our own index with Tailwind Loader
-        parsedFiles['/public/index.html'] = DEFAULT_FILES['/public/index.html'];
-        parsedFiles['/index.js'] = DEFAULT_FILES['/index.js'];
+        // Ensure standard wrappers exist
+        if (!finalFiles['/styles.css']) finalFiles['/styles.css'] = DEFAULT_FILES['/styles.css'];
+        finalFiles['/public/index.html'] = DEFAULT_FILES['/public/index.html'];
+        finalFiles['/index.js'] = DEFAULT_FILES['/index.js'];
         
-        // Ensure package.json points to our custom index.js and has React
+        // Ensure package.json is correct and includes elite dependencies
         let pkg: any = { dependencies: {} };
-        if (parsedFiles['/package.json']) {
-          try { pkg = JSON.parse(parsedFiles['/package.json']); } catch {}
+        if (finalFiles['/package.json']) {
+          try { pkg = JSON.parse(finalFiles['/package.json']); } catch {}
         }
         pkg.main = "/index.js";
         pkg.dependencies = { 
           ...pkg.dependencies, 
           "react": "^18.0.0", 
           "react-dom": "^18.0.0", 
-          "lucide-react": "latest" 
+          "lucide-react": "latest",
+          "framer-motion": "latest"
         };
-        parsedFiles['/package.json'] = JSON.stringify(pkg, null, 2);
+        finalFiles['/package.json'] = JSON.stringify(pkg, null, 2);
 
-        setFiles(parsedFiles);
+        // Remove the temporary file
+        delete (finalFiles as any)['/Generating...'];
+
+        setFiles(finalFiles);
         setSandpackKey(k => k + 1);
         setRightView('preview');
-
-        setMessages(prev => prev.map(m => m.id === streamMsgId
-          ? { ...m, content: `Ready for users to browse, discover, and build! 🎊\n\n**What's next?**\n• Refine & Customize: Tweak the design or layout via prompts.\n• Master Prompting: Use clear, detailed prompts for best results.` }
+        setMessages(prev => prev.map(m => m.id === streamMsgId 
+          ? { ...m, content: '✅ Application built successfully! Ready for your elite presentation. 🎊' } 
           : m
         ));
-        handleSave(parsedFiles);
+        handleSave(finalFiles);
       } else {
-        setMessages(prev => prev.map(m => m.id === streamMsgId ? { ...m, content: fullText.slice(0, 800) } : m));
-        setRightView('preview');
+        // Failure or Truncation: Stay in code view so the user can see/fix the raw output
+        setRightView('code');
+        setMessages(prev => prev.map(m => m.id === streamMsgId 
+          ? { ...m, content: '⚠️ Generation truncated or invalid JSON. You can find the raw output in the "/Generating..." file.' } 
+          : m
+        ));
       }
     } catch (e: any) {
+      console.error('Generation Error:', e);
       setMessages(prev => [...prev, { id: `err-${crypto.randomUUID()}`, role: 'ai', content: `❌ Error: ${e.message}` }]);
     } finally {
       setIsLoading(false);
