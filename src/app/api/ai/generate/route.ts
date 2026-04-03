@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
     NO NESTED "content" OBJECTS. 
     Format: { "files": { "/App.js": "code content", "/styles.css": "css content" } }
     NO PREAMBLE. NO MARKDOWN.
+    CSS RULE: Place any @import rules at the ABSOLUTE TOP of the file, before @tailwind directives.
     Always include /App.js, /styles.css (with Tailwind @tailwind directives), and /package.json.
     Use lucide-react. DEEP DARK MODE.`;
 
