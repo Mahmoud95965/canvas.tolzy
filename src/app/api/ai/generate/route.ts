@@ -15,6 +15,10 @@ async function verifyAuth(request: NextRequest): Promise<string | null> {
   if (!authHeader?.startsWith('Bearer ')) return null;
   const token = authHeader.split('Bearer ')[1];
   try {
+    if (!adminAuth) {
+      console.error('Firebase Admin not initialized. Check Env Vars.');
+      return null;
+    }
     const decodedToken = await adminAuth.verifyIdToken(token);
     return decodedToken.uid;
   } catch {
