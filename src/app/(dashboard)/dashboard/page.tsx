@@ -65,7 +65,10 @@ export default function DashboardPage() {
         body: JSON.stringify({ name: 'Generated Site', subdomain: `draft-${randomId}` }),
       });
 
-      if (!siteRes.ok) throw new Error("Failed to create site in database");
+      if (!siteRes.ok) {
+        const errorData = await siteRes.json();
+        throw new Error(errorData.error || errorData.details || "Failed to create site in database");
+      }
       
       const site = await siteRes.json();
 

@@ -22,8 +22,8 @@ export default function CreateSiteModal({ onClose, onCreate }: CreateSiteModalPr
 
     try {
       await onCreate(siteName, tempSubdomain);
-    } catch {
-      setError('Failed to create site');
+    } catch (err: any) {
+      setError(err.message || 'Failed to create site');
     } finally {
       setCreating(false);
     }
