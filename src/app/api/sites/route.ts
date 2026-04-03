@@ -43,72 +43,73 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(data);
 }
 
-// POST /api/sites — Create a new site
 export async function POST(request: NextRequest) {
-  const userId = await verifyAuth(request);
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const userId = await verifyAuth(request);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized - Check Firebase Env Vars' }, { status: 401 });
+    }
+
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+
+    const { name, subdomain } = body;
+    if (!subdomain) {
+      return NextResponse.json({ error: 'Subdomain is required' }, { status: 400 });
+    }
+
+    const finalName = name || 'Untitled Site';
+    const subdomainRegex = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/i;
+    if (!subdomainRegex.test(subdomain)) {
+      return NextResponse.json({ error: 'Invalid subdomain format' }, { status: 400 });
+    }
+
+    const reserved = ['www', 'app', 'api', 'admin', 'mail', 'blog', 'help', 'support', 'ai', 'tolzy'];
+    if (reserved.includes(subdomain)) {
+      return NextResponse.json({ error: 'Reserved subdomain' }, { status: 400 });
+    }
+
+    // Check if subdomain already exists
+    const { data: existing, error: checkError } = await supabaseAdmin
+      .from('sites')
+      .select('id')
+      .eq('subdomain', subdomain)
+      .maybeSingle();
+
+    if (checkError) {
+      return NextResponse.json({ error: `Database Check Error: ${checkError.message}` }, { status: 500 });
+    }
+
+    if (existing) {
+      return NextResponse.json({ error: 'Subdomain already taken' }, { status: 409 });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('sites')
+      .insert({
+        user_id: userId,
+        name: finalName,
+        subdomain,
+        meta_title: finalName,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: `Database Insert Error: ${error.message}` }, { status: 500 });
+    }
+
+    return NextResponse.json(data, { status: 201 });
+  } catch (globalError: any) {
+    console.error('CRITICAL API ERROR:', globalError);
+    return NextResponse.json({ 
+      error: 'Internal Server Error', 
+      details: globalError.message,
+      hint: 'Check if SUPABASE_SERVICE_ROLE_KEY and FIREBASE_PRIVATE_KEY are correct in Vercel.'
+    }, { status: 500 });
   }
-
-  const body = await request.json();
-  const { name, subdomain } = body;
-
-  if (!subdomain) {
-    return NextResponse.json(
-      { error: 'Subdomain is required' },
-      { status: 400 }
-    );
-  }
-
-  // Handle default site name
-  const finalName = name || 'Untitled Site';
-
-  // Validate subdomain format (allow alphanumeric and hyphens)
-  const subdomainRegex = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/i;
-  if (!subdomainRegex.test(subdomain)) {
-    return NextResponse.json(
-      { error: 'Subdomain can only contain lowercase letters, numbers, and hyphens' },
-      { status: 400 }
-    );
-  }
-
-  // Check for reserved subdomains
-  const reserved = ['www', 'app', 'api', 'admin', 'mail', 'blog', 'help', 'support'];
-  if (reserved.includes(subdomain)) {
-    return NextResponse.json(
-      { error: 'This subdomain is reserved' },
-      { status: 400 }
-    );
-  }
-
-  // Check if subdomain already exists
-  const { data: existing } = await supabaseAdmin
-    .from('sites')
-    .select('id')
-    .eq('subdomain', subdomain)
-    .single();
-
-  if (existing) {
-    return NextResponse.json(
-      { error: 'This subdomain is already taken' },
-      { status: 409 }
-    );
-  }
-
-  const { data, error } = await supabaseAdmin
-    .from('sites')
-    .insert({
-      user_id: userId,
-      name: finalName,
-      subdomain,
-      meta_title: finalName,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json(data, { status: 201 });
 }
