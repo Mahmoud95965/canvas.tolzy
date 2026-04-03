@@ -22,7 +22,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Skip reserved subdomains
-  const reserved = ['www', 'app', 'api', 'admin', 'mail', 'tolzy'];
+  const reserved = ['www', 'app', 'api', 'admin', 'mail', 'tolzy', 'ai'];
   if (subdomain && !reserved.includes(subdomain)) {
     // Rewrite to the sites rendering route
     url.pathname = `/sites/${subdomain}${url.pathname === '/' ? '' : url.pathname}`;
