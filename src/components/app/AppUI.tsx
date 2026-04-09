@@ -7,8 +7,21 @@ import { ArrowUp, Mic, PanelLeft, Sparkles, Layers, X, Settings, LogOut, Monitor
 import ChatMessage, { ChatMessageData } from '@/components/chat/ChatMessage';
 import ChatSidebar, { Conversation } from '@/components/chat/ChatSidebar';
 import { useTheme } from '@/lib/theme-context';
+import { LOCK_PREMIUM_MODELS_DURING_LAUNCH, PRO_LAUNCH_GUARD } from '@/lib/plan';
+import FavoriteButton from '@/components/common/FavoriteButton';
+import ShareButton from '@/components/common/ShareButton';
 
 const PRICING_URL = '/pricing';
+const SPEECH_RECOGNITION_LANG = 'ar-EG';
+
+type SpeechRecognitionCtor = new () => SpeechRecognition;
+
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionCtor;
+    webkitSpeechRecognition?: SpeechRecognitionCtor;
+  }
+}
 
 export default function AppUI({ initialChatId }: { initialChatId: string | null }) {
   const { user, loading, signOut, getIdToken, plan, refreshPlan } = useAuth();
@@ -26,10 +39,15 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
   const [profileOpen, setProfileOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<'flash' | 'thinker' | 'pro'>('flash');
+  const [isListening, setIsListening] = useState(false);
+  const [supportsSpeech, setSupportsSpeech] = useState(false);
+  const isProUser = plan === 'pro';
+  const canUseChat = !PRO_LAUNCH_GUARD || isProUser;
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
     if (!loading && !user) router.push('/login');
@@ -60,6 +78,65 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
       textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 160) + 'px';
     }
   }, [input]);
+
+  useEffect(() => {
+    if (LOCK_PREMIUM_MODELS_DURING_LAUNCH && (selectedModel === 'thinker' || selectedModel === 'pro')) {
+      setSelectedModel('flash');
+    }
+  }, [selectedModel]);
+
+  useEffect(() => {
+    const SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionImpl) return;
+
+    const recognition = new SpeechRecognitionImpl();
+    recognition.lang = SPEECH_RECOGNITION_LANG;
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result[0]?.transcript || '')
+        .join(' ')
+        .trim();
+
+      if (transcript) {
+        setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
+      }
+    };
+
+    recognitionRef.current = recognition;
+    setSupportsSpeech(true);
+
+    return () => {
+      recognition.stop();
+      recognitionRef.current = null;
+      setIsListening(false);
+    };
+  }, []);
+
+  const handleMicClick = useCallback(() => {
+    if (!supportsSpeech || !recognitionRef.current) {
+      alert('ميزة التسجيل الصوتي غير مدعومة في هذا المتصفح حالياً.');
+      return;
+    }
+
+    if (!canUseChat) {
+      router.push(PRICING_URL);
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      return;
+    }
+
+    recognitionRef.current.start();
+  }, [supportsSpeech, canUseChat, router, isListening]);
 
   const authHeaders = useCallback(async () => {
     const token = await getIdToken();
@@ -147,6 +224,10 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
   const handleSend = useCallback(async (text?: string) => {
     const content = (text || input).trim();
     if (!content || isStreaming) return;
+    if (PRO_LAUNCH_GUARD && plan !== 'pro') {
+      router.push(PRICING_URL);
+      return;
+    }
 
     setInput('');
 
@@ -193,6 +274,12 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
+        if (errorData.error === 'PRO_SUBSCRIPTION_REQUIRED') {
+          throw new Error('هذه النسخة متاحة حالياً لمشتركي Pro فقط.');
+        }
+        if (errorData.error === 'PREMIUM_MODELS_TEMPORARILY_LOCKED') {
+          throw new Error('وضعا المُفكِّر و Pro متوقفان مؤقتاً حتى الإطلاق.');
+        }
         if (errorData.error === 'PRO_REQUIRED') {
           throw new Error('هذه الميزة متاحة لمشتركي Pro فقط. يمكنك الترقية من صفحة الأسعار.');
         }
@@ -204,41 +291,16 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let fullContent = '';
-      let pendingContent = '';
-      let streamDone = false;
-
-      const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-      // Render text with a gentle typewriter effect for a smoother UX.
-      const renderSlowly = async () => {
-        while (!streamDone || pendingContent.length > 0) {
-          if (pendingContent.length === 0) {
-            await sleep(16);
-            continue;
-          }
-
-          const takeChars = Math.min(3, pendingContent.length);
-          fullContent += pendingContent.slice(0, takeChars);
-          pendingContent = pendingContent.slice(takeChars);
-
-          setMessages(prev =>
-            prev.map(m => (m.id === aiMsgId ? { ...m, content: fullContent } : m))
-          );
-
-          await sleep(22);
-        }
-      };
-
-      const renderPromise = renderSlowly();
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        pendingContent += decoder.decode(value, { stream: true });
+        fullContent += decoder.decode(value, { stream: true });
+        setMessages(prev =>
+          prev.map(m => (m.id === aiMsgId ? { ...m, content: fullContent } : m))
+        );
       }
-      pendingContent += decoder.decode();
-      streamDone = true;
-      await renderPromise;
+      fullContent += decoder.decode();
 
       setMessages(prev => prev.map(m => m.id === aiMsgId ? { ...m, content: fullContent, isStreaming: false } : m));
       await saveMessage(convId, 'assistant', fullContent);
@@ -253,7 +315,7 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
       setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [input, isStreaming, messages, activeId, getIdToken, createConversation, saveMessage, selectedModel]);
+  }, [input, isStreaming, messages, activeId, getIdToken, createConversation, saveMessage, selectedModel, plan, router]);
 
   const handleMessageFeedback = useCallback(async (messageId: string, type: 'like' | 'dislike') => {
     try {
@@ -455,6 +517,13 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
 
         {/* Chat Feed */}
         <div className="flex-1 overflow-y-auto scrollbar-hide relative pt-16 flex flex-col" dir="rtl">
+          {!canUseChat && (
+            <div className="mx-auto mt-4 w-full max-w-3xl px-4 sm:px-6">
+              <div className="rounded-2xl border border-amber-200/70 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/25 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
+                تم إيقاف الميزات مؤقتًا قبل الإطلاق. استخدام المنصة متاح حاليًا لمشتركي Pro فقط.
+              </div>
+            </div>
+          )}
           {isEmpty ? (
             <div className="flex-1 flex flex-col items-center justify-center px-4 md:px-8 pb-20 animate-in fade-in duration-700">
               <div className="w-16 h-16 rounded-3xl bg-zinc-50 dark:bg-white/[0.03] flex items-center justify-center mb-6 border border-zinc-100 dark:border-white/5 shadow-sm">
@@ -473,7 +542,12 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
                   { icon: '🎨', text: 'صمم واجهة مستخدم حديثة' },
                   { icon: '📊', text: 'اشرح لي قواعد البيانات بطريقة بسيطة' },
                 ].map((chip, i) => (
-                  <button key={i} onClick={() => handleSend(chip.text)} className="flex items-center gap-3 px-5 py-3 rounded-[20px] bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-white/5 shadow-sm hover:shadow-md dark:shadow-none hover:bg-zinc-50 dark:hover:bg-white/[0.04] transition-all hover:-translate-y-0.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-white/10">
+                  <button
+                    key={i}
+                    onClick={() => handleSend(chip.text)}
+                    disabled={!canUseChat}
+                    className="flex items-center gap-3 px-5 py-3 rounded-[20px] bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-white/5 shadow-sm hover:shadow-md dark:shadow-none hover:bg-zinc-50 dark:hover:bg-white/[0.04] transition-all hover:-translate-y-0.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-white/10 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                  >
                     <span className="text-xl shrink-0">{chip.icon}</span>
                     <span className="text-right">{chip.text}</span>
                   </button>
@@ -482,6 +556,12 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
             </div>
           ) : (
             <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 w-full flex-1">
+              {activeId && (
+                <div className="mb-3 flex items-center justify-end gap-2">
+                  <FavoriteButton itemId={activeId} itemType="chat" initialIsFavorite={false} />
+                  <ShareButton chatId={activeId} />
+                </div>
+              )}
               {messages.map(msg => (
                 <ChatMessage
                   key={msg.id}
@@ -512,8 +592,14 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                disabled={isStreaming}
-                placeholder={isStreaming ? 'جاري التفكير...' : 'اكتب رسالتك أو استفسارك هنا...'}
+                disabled={isStreaming || !canUseChat}
+                placeholder={
+                  !canUseChat
+                    ? 'المنصة حالياً متاحة لمشتركي Pro فقط.'
+                    : isStreaming
+                      ? 'جاري التفكير...'
+                      : 'اكتب رسالتك أو استفسارك هنا...'
+                }
                 className="w-full bg-transparent text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none resize-none text-[15px] font-medium leading-relaxed px-5 pt-4 pb-2 min-h-[56px] max-h-48 scrollbar-hide"
               />
 
@@ -550,7 +636,9 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
                           
                           <button
                             onClick={() => {
-                              if (plan === 'pro') {
+                              if (LOCK_PREMIUM_MODELS_DURING_LAUNCH) {
+                                setModelOpen(false);
+                              } else if (plan === 'pro') {
                                 setSelectedModel('thinker');
                                 setModelOpen(false);
                               } else {
@@ -558,23 +646,30 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
                               }
                             }}
                             className={`flex items-start justify-between p-2.5 rounded-[14px] text-right transition-colors ${
-                              plan === 'pro'
-                                ? 'hover:bg-zinc-50 dark:hover:bg-white/[0.04] text-zinc-600 dark:text-zinc-300'
-                                : 'opacity-80 hover:bg-indigo-50 dark:hover:bg-indigo-500/10'
+                              LOCK_PREMIUM_MODELS_DURING_LAUNCH
+                                ? 'opacity-60 cursor-not-allowed'
+                                : plan === 'pro'
+                                  ? 'hover:bg-zinc-50 dark:hover:bg-white/[0.04] text-zinc-600 dark:text-zinc-300'
+                                  : 'opacity-80 hover:bg-indigo-50 dark:hover:bg-indigo-500/10'
                             }`}
                           >
                              <div className="flex flex-col text-right w-full">
                                 <span className="font-semibold text-[13px] text-zinc-900 dark:text-white flex items-center gap-1.5">
-                                  المُفكِّر {plan === 'free' && <span className="text-[9px] bg-indigo-100 dark:bg-indigo-500/20 px-1.5 py-0.5 rounded-sm">Pro</span>}
+                                  المُفكِّر{' '}
+                                  <span className="text-[9px] bg-zinc-200 dark:bg-zinc-700/70 px-1.5 py-0.5 rounded-sm">
+                                    {LOCK_PREMIUM_MODELS_DURING_LAUNCH ? 'قريباً' : 'Pro'}
+                                  </span>
                                 </span>
                                 <span className="text-[11px] text-zinc-500 mt-0.5">مخصص لحل المشاكل المعقدة.</span>
                              </div>
-                             {selectedModel === 'thinker' && plan === 'pro' && <Check size={16} className="text-zinc-900 dark:text-white mt-0.5" />}
+                             {selectedModel === 'thinker' && plan === 'pro' && !LOCK_PREMIUM_MODELS_DURING_LAUNCH && <Check size={16} className="text-zinc-900 dark:text-white mt-0.5" />}
                           </button>
 
                           <button
                             onClick={() => {
-                              if (plan === 'pro') {
+                              if (LOCK_PREMIUM_MODELS_DURING_LAUNCH) {
+                                setModelOpen(false);
+                              } else if (plan === 'pro') {
                                 setSelectedModel('pro');
                                 setModelOpen(false);
                               } else {
@@ -582,18 +677,23 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
                               }
                             }}
                             className={`flex items-start justify-between p-2.5 rounded-[14px] text-right transition-colors ${
-                              plan === 'pro'
-                                ? 'hover:bg-zinc-50 dark:hover:bg-white/[0.04] text-zinc-600 dark:text-zinc-300'
-                                : 'opacity-80 hover:bg-indigo-50 dark:hover:bg-indigo-500/10'
+                              LOCK_PREMIUM_MODELS_DURING_LAUNCH
+                                ? 'opacity-60 cursor-not-allowed'
+                                : plan === 'pro'
+                                  ? 'hover:bg-zinc-50 dark:hover:bg-white/[0.04] text-zinc-600 dark:text-zinc-300'
+                                  : 'opacity-80 hover:bg-indigo-50 dark:hover:bg-indigo-500/10'
                             }`}
                           >
                              <div className="flex flex-col text-right w-full">
                                 <span className="font-semibold text-[13px] text-zinc-900 dark:text-white flex items-center gap-1.5">
-                                  Tolzy Pro {plan === 'free' && <span className="text-[9px] bg-indigo-100 dark:bg-indigo-500/20 px-1.5 py-0.5 rounded-sm">Pro</span>}
+                                  Tolzy Pro{' '}
+                                  <span className="text-[9px] bg-zinc-200 dark:bg-zinc-700/70 px-1.5 py-0.5 rounded-sm">
+                                    {LOCK_PREMIUM_MODELS_DURING_LAUNCH ? 'قريباً' : 'Pro'}
+                                  </span>
                                 </span>
                                 <span className="text-[11px] text-zinc-500 mt-0.5">أعلى أداء برمجي ورياضي.</span>
                              </div>
-                             {selectedModel === 'pro' && plan === 'pro' && <Check size={16} className="text-zinc-900 dark:text-white mt-0.5" />}
+                             {selectedModel === 'pro' && plan === 'pro' && !LOCK_PREMIUM_MODELS_DURING_LAUNCH && <Check size={16} className="text-zinc-900 dark:text-white mt-0.5" />}
                           </button>
 
                           <div className="h-px bg-zinc-100 dark:bg-white/5 my-1 mx-2" />
@@ -625,14 +725,29 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
                 {/* Left side actions */}
                 <div className="flex items-center gap-2">
                   {!input.trim() && (
-                     <button className="p-2.5 text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors">
+                     <button
+                       onClick={handleMicClick}
+                       disabled={!supportsSpeech || !canUseChat}
+                       className={`p-2.5 rounded-xl transition-colors ${
+                         isListening
+                           ? 'text-red-500 bg-red-50 dark:bg-red-500/10'
+                           : 'text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5'
+                       } disabled:opacity-40 disabled:cursor-not-allowed`}
+                       title={
+                         !supportsSpeech
+                           ? 'التسجيل الصوتي غير مدعوم في متصفحك'
+                           : isListening
+                             ? 'إيقاف التسجيل'
+                             : 'ابدأ التسجيل الصوتي'
+                       }
+                     >
                        <Mic size={18} />
                      </button>
                   )}
                   {input.trim() ? (
                     <button
                       onClick={() => handleSend()}
-                      disabled={isStreaming}
+                      disabled={isStreaming || !canUseChat}
                       className="w-10 h-10 rounded-[14px] flex items-center justify-center bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-sm hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 shrink-0"
                     >
                       {isStreaming ? (

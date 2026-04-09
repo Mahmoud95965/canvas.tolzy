@@ -8,7 +8,7 @@ import {
   signOut as firebaseSignOut,
 } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
-import { NormalizedPlan, planFromEntitlements } from './plan';
+import { NormalizedPlan, normalizePlan, planFromEntitlements } from './plan';
 
 interface AuthContextType {
   user: User | null;
@@ -89,6 +89,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const payload = await response.json();
+      if (payload?.plan) {
+        setPlan(normalizePlan(payload.plan));
+        return;
+      }
       const entitlements = Array.isArray(payload?.entitlements) ? payload.entitlements : [];
       setPlan(planFromEntitlements(entitlements));
     } catch (error) {
