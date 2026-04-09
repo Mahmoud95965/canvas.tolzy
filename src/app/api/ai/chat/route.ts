@@ -13,6 +13,7 @@ export const maxDuration = 60;
 const MAX_MESSAGES = 24;
 const MAX_CHARS_PER_MESSAGE = 6000;
 const MAX_TOTAL_CHARS = 50000;
+const MAX_OUTPUT_TOKENS = 4096;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 30;
 const rateLimitStore = new Map<string, { count: number; windowStart: number }>();
@@ -134,7 +135,7 @@ async function callOpenRouter(
         messages,
         stream: false,
         temperature: 0.2,
-        max_tokens: 1536,
+        max_tokens: MAX_OUTPUT_TOKENS,
       }),
       signal: controller.signal,
     });
@@ -167,7 +168,7 @@ async function callGoogleFallback(
     contents: mapToGeminiContents(messages),
     generationConfig: {
       temperature: 0.2,
-      maxOutputTokens: 1536,
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
     },
   });
 

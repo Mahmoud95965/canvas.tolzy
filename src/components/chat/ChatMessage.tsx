@@ -17,6 +17,32 @@ interface Props {
   message: ChatMessageData;
 }
 
+function CodeBlock({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyCode = useCallback(() => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  }, [code]);
+
+  return (
+    <div className="relative my-3">
+      <button
+        onClick={handleCopyCode}
+        className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 rounded-md border border-white/10 bg-zinc-900/85 px-2 py-1 text-[11px] text-zinc-200 hover:bg-zinc-800 transition-colors"
+        title="نسخ الكود"
+      >
+        {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+        {copied ? 'تم النسخ' : 'نسخ الكود'}
+      </button>
+      <pre className="p-4 bg-zinc-100 dark:bg-[#0d0d0d] rounded-xl overflow-x-auto text-[13px] font-mono leading-relaxed text-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-white/10 scrollbar-hide">
+        <code dir="ltr" className="block text-left">{code}</code>
+      </pre>
+    </div>
+  );
+}
+
 // ─── Markdown Parser ───────────────────────────────────────────────
 function parseMarkdown(text: string): React.ReactNode[] {
   const blocks = text.split(/\n/);
@@ -40,11 +66,7 @@ function parseMarkdown(text: string): React.ReactNode[] {
       if (lang === 'html') {
         result.push(<HtmlPreview key={`html-${i}`} code={code} />);
       } else {
-        result.push(
-          <pre key={`code-${i}`} className="my-3 p-4 bg-zinc-100 dark:bg-[#0d0d0d] rounded-xl overflow-x-auto text-[13px] font-mono leading-relaxed text-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-white/10 scrollbar-hide">
-            <code dir="ltr" className="block text-left">{code}</code>
-          </pre>
-        );
+        result.push(<CodeBlock key={`code-${i}`} code={code} />);
       }
       i++;
       continue;

@@ -358,16 +358,47 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let fullContent = '';
+      let renderedContent = '';
+      let pendingContent = '';
+      let streamDone = false;
+
+      const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+      const renderProgressively = async () => {
+        while (!streamDone || pendingContent.length > 0) {
+          if (!pendingContent.length) {
+            await sleep(12);
+            continue;
+          }
+
+          const take = Math.min(2, pendingContent.length);
+          renderedContent += pendingContent.slice(0, take);
+          pendingContent = pendingContent.slice(take);
+
+          setMessages((prev) =>
+            prev.map((m) => (m.id === aiMsgId ? { ...m, content: renderedContent } : m))
+          );
+
+          await sleep(12);
+        }
+      };
+
+      const renderPromise = renderProgressively();
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        fullContent += decoder.decode(value, { stream: true });
-        setMessages(prev =>
-          prev.map(m => (m.id === aiMsgId ? { ...m, content: fullContent } : m))
-        );
+        const chunk = decoder.decode(value, { stream: true });
+        if (!chunk) continue;
+        fullContent += chunk;
+        pendingContent += chunk;
       }
-      fullContent += decoder.decode();
+      const finalChunk = decoder.decode();
+      if (finalChunk) {
+        fullContent += finalChunk;
+        pendingContent += finalChunk;
+      }
+      streamDone = true;
+      await renderPromise;
 
       setMessages(prev => prev.map(m => m.id === aiMsgId ? { ...m, content: fullContent, isStreaming: false } : m));
       await saveMessage(convId, 'assistant', fullContent);
