@@ -19,10 +19,16 @@ interface SpeechRecognitionAlternative {
 interface SpeechRecognitionResultLike {
   0: SpeechRecognitionAlternative;
   length: number;
+  isFinal: boolean;
 }
 
 interface SpeechRecognitionEventLike extends Event {
   results: ArrayLike<SpeechRecognitionResultLike>;
+  resultIndex: number;
+}
+
+interface SpeechRecognitionErrorEventLike extends Event {
+  error?: string;
 }
 
 interface SpeechRecognitionLike {
@@ -32,7 +38,7 @@ interface SpeechRecognitionLike {
   maxAlternatives: number;
   onstart: (() => void) | null;
   onend: (() => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
   onresult: ((event: SpeechRecognitionEventLike) => void) | null;
   start: () => void;
   stop: () => void;
@@ -71,6 +77,8 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const keepListeningRef = useRef(false);
+  const lastFinalChunkRef = useRef('');
 
   useEffect(() => {
     if (!loading && !user) router.push('/login');
@@ -114,29 +122,64 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
 
     const recognition = new SpeechRecognitionImpl();
     recognition.lang = SPEECH_RECOGNITION_LANG;
-    recognition.interimResults = true;
-    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.continuous = true;
     recognition.maxAlternatives = 1;
 
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onerror = () => setIsListening(false);
-    recognition.onresult = (event: SpeechRecognitionEventLike) => {
-      const transcript = Array.from(event.results)
-        .map((result) => result[0]?.transcript || '')
-        .join(' ')
-        .trim();
-
-      if (transcript) {
-        setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
+    recognition.onstart = () => {
+      setIsListening(true);
+      lastFinalChunkRef.current = '';
+    };
+    recognition.onend = () => {
+      if (keepListeningRef.current) {
+        try {
+          recognition.start();
+          return;
+        } catch {
+          // Ignore restart race errors
+        }
       }
+      setIsListening(false);
+    };
+    recognition.onerror = (event: SpeechRecognitionErrorEventLike) => {
+      const errorCode = String(event?.error || '');
+      if (errorCode === 'not-allowed' || errorCode === 'service-not-allowed') {
+        keepListeningRef.current = false;
+      }
+      setIsListening(false);
+    };
+    recognition.onresult = (event: SpeechRecognitionEventLike) => {
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const result = event.results[i];
+        if (!result?.isFinal) continue;
+        const chunk = String(result[0]?.transcript || '').trim();
+        if (!chunk) continue;
+        finalTranscript += `${finalTranscript ? ' ' : ''}${chunk}`;
+      }
+
+      const normalizedChunk = finalTranscript.replace(/\s+/g, ' ').trim();
+      if (!normalizedChunk) return;
+      if (normalizedChunk === lastFinalChunkRef.current) return;
+      lastFinalChunkRef.current = normalizedChunk;
+
+      setInput((prev) => {
+        const normalizedPrev = prev.replace(/\s+/g, ' ').trim();
+        if (normalizedPrev.endsWith(normalizedChunk)) return prev;
+        return prev ? `${prev} ${normalizedChunk}` : normalizedChunk;
+      });
     };
 
     recognitionRef.current = recognition;
     setSupportsSpeech(true);
 
     return () => {
-      recognition.stop();
+      keepListeningRef.current = false;
+      try {
+        recognition.stop();
+      } catch {
+        // no-op
+      }
       recognitionRef.current = null;
       setIsListening(false);
     };
@@ -154,10 +197,13 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
     }
 
     if (isListening) {
+      keepListeningRef.current = false;
       recognitionRef.current.stop();
       return;
     }
 
+    keepListeningRef.current = true;
+    lastFinalChunkRef.current = '';
     recognitionRef.current.start();
   }, [supportsSpeech, canUseChat, router, isListening]);
 
