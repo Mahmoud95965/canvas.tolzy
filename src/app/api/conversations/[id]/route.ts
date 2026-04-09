@@ -28,7 +28,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const { data, error } = await supabaseAdmin
     .from('messages')
-    .select('id, role, content, image_url, created_at')
+    .select('id, role, content, created_at')
     .eq('conversation_id', params.id)
     .order('created_at', { ascending: true });
 
@@ -41,11 +41,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const userId = await verifyAuth(req);
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { role, content, image_url } = await req.json();
+  const { role, content } = await req.json();
 
   const { data, error } = await supabaseAdmin
     .from('messages')
-    .insert({ conversation_id: params.id, role, content, image_url: image_url || null })
+    .insert({ conversation_id: params.id, role, content })
     .select()
     .single();
 

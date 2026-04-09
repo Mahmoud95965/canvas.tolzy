@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase-admin';
 import dns from 'node:dns';
 import { LOCK_PREMIUM_MODELS_DURING_LAUNCH } from '@/lib/plan';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import {
+  fetchOpenRouterChatCompletionText,
+  OPENROUTER_DEFAULT_MODEL,
+  UPSTREAM_CONGESTION_USER_MESSAGE_AR,
+} from '@/lib/openrouter-defaults';
 
 if (typeof dns.setDefaultResultOrder === 'function') {
   dns.setDefaultResultOrder('ipv4first');
@@ -33,36 +37,35 @@ async function verifyAuth(request: NextRequest): Promise<AuthPayload | null> {
   }
 }
 
-const SYSTEM_PROMPT = `أنت "Tolzy Copilot"، مساعد ذكي فائق القدرات ونموذج لغوي ضخم. 
-أنت تمثل العقل المدبر الخاص بمنظومة "TOLZY AI"، وتندرج كأحد أهم مشاريع منصة تولزي... (ضع باقي البرومبت الخاص بك هنا)`;
+const SYSTEM_PROMPT = `أنت "Tolzy Copilot"، المساعد الرسمي لمنظومة "TOLZY AI" على منصة تولزي.
 
-function getModelString(type: string) {
-  if (type === 'thinker') return 'google/gemini-2.5-flash';
-  if (type === 'pro') return 'google/gemini-2.5-pro';
-  return 'google/gemini-2.5-flash';
-}
+## أولوية مطلقة: الصدق والدقة
+- لا تذكر حقائق قابلة للتحقق (تواريخ، أرقام دقيقة، نصوص قانونية حرفية، أخبار حديثة، نتائج رياضية/طبية/مالية محددة، أسماء أشخاص أو جهات مرتبطة بوقائع) إلا إذا كنت واثقًا من صحتها ضمن تدريبك. إذا كان هناك أي شك، قل بوضوح أنك **غير متأكد** أو أن الإجابة **تقديرية** وتحتاج مراجعة.
+- **ممنوع الادّعاء باليقين** عندما تكون المعرفة ضعيفة أو المعطيات ناقصة. استخدم صيغًا مثل: «لا أملك تأكيدًا»، «يُفضّل التحقق من المصدر الرسمي»، «هذا استنتاج عام وليس حقيقة موثقة».
+- **ممنوع اختراع** مصادر، روابط، دراسات، اقتباسات، أو أحداث لم تتحقق منها. لا تُنشئ مراجع وهمية.
 
-function extractAssistantText(payload: any): string {
-  const content = payload?.choices?.[0]?.message?.content;
-  if (typeof content === 'string') return content;
+## مكافحة الهلوسة
+- لا تملأ الفراغات بتفاصيل مصطنعة لتبدو الإجابة كاملة. الأفضل الإجابة القصيرة الصادقة من الإطالة المضللة.
+- إن طُلب منك شيء خارج نطاق معلوماتك أو يتطلب بيانات حديثة لم تُعطَ لك، **اعترف بذلك** ووجّه المستخدم لما يلزم للتحقق (موقع رسمي، وثيقة، خبير) دون تلفيق.
 
-  // Some providers return content as array parts
-  if (Array.isArray(content)) {
-    return content
-      .map((part: any) => {
-        if (typeof part === 'string') return part;
-        if (typeof part?.text === 'string') return part.text;
-        return '';
-      })
-      .join('')
-      .trim();
+## «البحث» والمعلومات الحديثة
+- لا تتظاهر أنك نفّذت بحثًا على الويب أو قرأت مستندًا لم يُعرض عليك في المحادثة. إن لم تُرفق مصادر في السياق، صرّح أن إجابتك مبنية على معرفة عامة حتى تاريخ تدريبك وليست نتيجة بحث مباشر.
+- للمواضيع التي تتغير بسرعة (أسعار، قوانين، إصدارات برمجيات، أخبار اليوم)، نبّه المستخدم أن المعلومات قد تكون قديمة ويحتاج التحقق من المصدر المحدّث.
+
+## أسلوب الإجابة
+- كن واضحًا ومنظمًا. ميّز بين: **حقيقة مؤكدة في السياق**، **معرفة عامة محتملة**، و**رأي أو اقتراح**.
+- احترم لغة المستخدم (العربية افتراضيًا عند الطلب). لا تبالغ في الثقة اللفظية إذا لم تكن البيانات مؤكدة.
+
+التزم بهذه القواعد في كل رد، حتى لو طُلب منك الإيجاز أو الإبداع في الصياغة.`;
+
+function getOpenRouterModelString(type: string) {
+  if (type === 'thinker') {
+    return process.env.OPENROUTER_THINKER_MODEL?.trim() || OPENROUTER_DEFAULT_MODEL;
   }
-
-  // Fallback to chunk-like structure if present
-  const deltaContent = payload?.choices?.[0]?.delta?.content;
-  if (typeof deltaContent === 'string') return deltaContent;
-
-  return '';
+  if (type === 'pro') {
+    return process.env.OPENROUTER_PRO_MODEL?.trim() || OPENROUTER_DEFAULT_MODEL;
+  }
+  return process.env.OPENROUTER_CHAT_MODEL?.trim() || OPENROUTER_DEFAULT_MODEL;
 }
 
 function checkRateLimit(uid: string): boolean {
@@ -104,79 +107,6 @@ function normalizeIncomingMessages(raw: unknown): Array<{ role: 'user' | 'assist
   return normalized;
 }
 
-function mapToGeminiContents(messages: Array<{ role: string; content: string }>) {
-  return messages
-    .filter((m) => typeof m?.content === 'string' && m.content.trim() !== '')
-    .map((m) => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
-    }));
-}
-
-async function callOpenRouter(
-  apiKey: string,
-  model: string,
-  messages: Array<{ role: string; content: string }>
-): Promise<string> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 20000);
-
-  try {
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://tolzy.me',
-        'X-Title': 'Tolzy Flow',
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        stream: false,
-        temperature: 0.2,
-        max_tokens: MAX_OUTPUT_TOKENS,
-      }),
-      signal: controller.signal,
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`OpenRouter error: ${text}`);
-    }
-
-    const json = await res.json();
-    const text = extractAssistantText(json);
-    if (!text) throw new Error('OpenRouter empty completion');
-    return text;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
-async function callGoogleFallback(
-  apiKey: string,
-  messages: Array<{ role: string; content: string }>
-): Promise<string> {
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash',
-    systemInstruction: SYSTEM_PROMPT,
-  });
-
-  const result = await model.generateContent({
-    contents: mapToGeminiContents(messages),
-    generationConfig: {
-      temperature: 0.2,
-      maxOutputTokens: MAX_OUTPUT_TOKENS,
-    },
-  });
-
-  const text = result.response.text()?.trim();
-  if (!text) throw new Error('Google fallback empty completion');
-  return text;
-}
-
 export async function POST(request: NextRequest) {
   try {
     const auth = await verifyAuth(request);
@@ -186,9 +116,8 @@ export async function POST(request: NextRequest) {
     }
 
     const openRouterApiKey = process.env.OPENROUTER_API_KEY;
-    const googleApiKey = process.env.GOOGLE_AI_STUDIO_API_KEY || process.env.GOOGLE_GEMINI_API_KEY;
-    if (!openRouterApiKey && !googleApiKey) {
-      return NextResponse.json({ error: 'No AI provider key configured' }, { status: 500 });
+    if (!openRouterApiKey) {
+      return NextResponse.json({ error: 'OpenRouter API key not configured' }, { status: 500 });
     }
 
     const body = await request.json();
@@ -198,29 +127,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'PREMIUM_MODELS_TEMPORARILY_LOCKED' }, { status: 403 });
     }
     const effectiveModelType = 'flash';
-    const model = getModelString(effectiveModelType);
+    const openRouterModel = getOpenRouterModelString(effectiveModelType);
 
-    const openRouterMessages = [
-      { role: 'system', content: SYSTEM_PROMPT },
-      ...messages
-    ];
-    let text = '';
-    let openRouterError: unknown = null;
-    if (openRouterApiKey) {
-      try {
-        text = await callOpenRouter(openRouterApiKey, model, openRouterMessages as Array<{ role: string; content: string }>);
-      } catch (error) {
-        openRouterError = error;
-        console.error('OpenRouter primary failed, trying Google fallback:', error);
+    const withSystem = [{ role: 'system', content: SYSTEM_PROMPT }, ...messages] as Array<{
+      role: string;
+      content: string;
+    }>;
+
+    let text: string;
+    try {
+      text = await fetchOpenRouterChatCompletionText(
+        openRouterApiKey,
+        openRouterModel,
+        withSystem,
+        MAX_OUTPUT_TOKENS,
+        0.2
+      );
+    } catch (error) {
+      if (error instanceof Error && error.message === 'OPENROUTER_RATE_LIMIT') {
+        return NextResponse.json(
+          { error: 'UPSTREAM_RATE_LIMIT', message: UPSTREAM_CONGESTION_USER_MESSAGE_AR },
+          { status: 429 }
+        );
       }
-    }
-
-    if (!text && googleApiKey) {
-      text = await callGoogleFallback(googleApiKey, messages);
-    }
-
-    if (!text) {
-      console.error('AI providers failed', openRouterError);
+      console.error('OpenRouter chat failed:', error);
       return NextResponse.json({ error: 'AI connection failed' }, { status: 500 });
     }
 
@@ -230,15 +160,11 @@ export async function POST(request: NextRequest) {
         'Cache-Control': 'no-cache, no-transform',
       },
     });
-
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Chat API Error:', error);
     if (error instanceof Error && error.message === 'INVALID_MESSAGES') {
       return NextResponse.json({ error: 'Invalid request payload' }, { status: 400 });
     }
-    return NextResponse.json({ 
-      error: 'Internal Server Error',
-      details: error?.message || String(error)
-    }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

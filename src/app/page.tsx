@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
-import { Sparkles, ArrowLeft, Layers, MessageSquare, Zap, Target } from 'lucide-react';
+import { Sparkles, ArrowLeft, Layers, MessageSquare, Zap, Code2 } from 'lucide-react';
 
 export default function LandingPage() {
   const { user, loading, plan } = useAuth();
@@ -180,10 +180,10 @@ export default function LandingPage() {
           </div>
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-right backdrop-blur-sm hover:bg-white/10 transition-colors">
             <div className="w-12 h-12 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center mb-4">
-              <Target size={24} />
+              <Code2 size={24} />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">تحليل الصور</h3>
-            <p className="text-zinc-400 text-sm leading-relaxed font-medium">ارفع أي صورة واطلب من تولزي شرحها واستخراج البيانات أو الأكواد منها بدقة متناهية.</p>
+            <h3 className="text-xl font-bold text-white mb-2">كود جاهز للتشغيل</h3>
+            <p className="text-zinc-400 text-sm leading-relaxed font-medium">اطلب مكوّنات أو سكربتات واضحة، مع شرح مختصر يمكنك نسخه وتجربته مباشرة في مشروعك.</p>
           </div>
         </div>
       </main>

@@ -8,7 +8,7 @@ const cairo = Cairo({ subsets: ['arabic', 'latin'], display: 'swap' });
 
 export const metadata: Metadata = {
   title: 'Tolzy AI — مساعدك الذكي المتقدم',
-  description: 'Tolzy AI — مساعد ذكي متقدم للإجابة على الأسئلة، كتابة الكود، تحليل الصور، وتصميم واجهات مذهلة.',
+  description: 'Tolzy AI — مساعد ذكي متقدم للإجابة على الأسئلة، كتابة الكود، وتصميم واجهات مذهلة.',
   keywords: ['Tolzy AI', 'AI assistant', 'مساعد ذكاء اصطناعي', 'chatbot', 'code generation'],
   icons: {
     icon: '/icon.png',
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
   title: 'Tolzy AI — مساعدك الذكي المتقدم',
-    description: 'مساعد ذكي لكل شيء — كود، تصاميم، أسئلة، وتحليل صور.',
+    description: 'مساعد ذكي لكل شيء — كود، تصاميم، وأسئلة.',
     type: 'website',
   },
 };

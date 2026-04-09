@@ -3,7 +3,7 @@
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { ArrowUp, Mic, PanelLeft, Sparkles, Layers, X, Settings, LogOut, Monitor, Moon, Sun, ChevronDown, Check, Image as ImageIcon } from 'lucide-react';
+import { ArrowUp, Mic, PanelLeft, Sparkles, Layers, X, Settings, LogOut, Monitor, Moon, Sun, ChevronDown, Check } from 'lucide-react';
 import ChatMessage, { ChatMessageData } from '@/components/chat/ChatMessage';
 import ChatSidebar, { Conversation } from '@/components/chat/ChatSidebar';
 import { useTheme } from '@/lib/theme-context';
@@ -239,12 +239,12 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
     return data.id;
   }, [authHeaders]);
 
-  const saveMessage = useCallback(async (convId: string, role: 'user' | 'assistant', content: string, image_url?: string) => {
+  const saveMessage = useCallback(async (convId: string, role: 'user' | 'assistant', content: string) => {
     const headers = await authHeaders();
     await fetch(`/api/conversations/${convId}`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ role, content, image_url }),
+      body: JSON.stringify({ role, content }),
     });
   }, [authHeaders]);
 
@@ -258,7 +258,6 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
         id: m.id,
         role: m.role as 'user' | 'assistant',
         content: m.content,
-        imageUrl: m.image_url || undefined,
       }));
       setMessages(mapped);
       setActiveId(id);
@@ -349,6 +348,13 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
         }
         if (errorData.error === 'PRO_REQUIRED') {
           throw new Error('هذه الميزة متاحة لمشتركي Pro فقط. يمكنك الترقية من صفحة الأسعار.');
+        }
+        if (errorData.error === 'UPSTREAM_RATE_LIMIT') {
+          throw new Error(
+            typeof errorData.message === 'string' && errorData.message.trim()
+              ? errorData.message
+              : 'حاول مرة أخرى بسبب الضغط على السيرفر.'
+          );
         }
         throw new Error(errorData.error || 'فشل الاتصال بالذكاء الاصطناعي');
       }
@@ -760,13 +766,6 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
                     )}
                   </div>
 
-                  <button
-                    disabled
-                    className="p-2 text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl transition-colors cursor-not-allowed"
-                    title="ميزة الصور قريباً"
-                  >
-                    <ImageIcon size={18} />
-                  </button>
                 </div>
 
                 {/* Left side actions */}

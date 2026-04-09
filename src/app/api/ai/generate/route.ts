@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase-admin';
+import {
+  OPENROUTER_DEFAULT_MODEL,
+  openRouterPostChatCompletionsWithRetry,
+  UPSTREAM_CONGESTION_USER_MESSAGE_AR,
+} from '@/lib/openrouter-defaults';
 import dns from 'node:dns';
 
-// Fix for Node.js native fetch ETIMEDOUT (IPv6 block issues)
 if (typeof dns.setDefaultResultOrder === 'function') {
   dns.setDefaultResultOrder('ipv4first');
 }
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
+
+function openRouterCodeModel(): string {
+  return process.env.OPENROUTER_CODE_MODEL?.trim() || OPENROUTER_DEFAULT_MODEL;
+}
 
 async function verifyAuth(request: NextRequest): Promise<string | null> {
   const authHeader = request.headers.get('Authorization');
@@ -24,6 +32,47 @@ async function verifyAuth(request: NextRequest): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+function sseTokenStream() {
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  return new TransformStream({
+    transform(chunk: Uint8Array, controller: TransformStreamDefaultController<Uint8Array>) {
+      buffer += decoder.decode(chunk, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('data: ') && !trimmed.includes('[DONE]')) {
+          try {
+            const data = JSON.parse(trimmed.slice(6));
+            const content = data.choices?.[0]?.delta?.content;
+            if (content) {
+              controller.enqueue(encoder.encode(content));
+            }
+          } catch {
+            /* skip malformed chunk */
+          }
+        }
+      }
+    },
+    flush(controller: TransformStreamDefaultController<Uint8Array>) {
+      const trimmed = buffer.trim();
+      if (trimmed.startsWith('data: ') && !trimmed.includes('[DONE]')) {
+        try {
+          const data = JSON.parse(trimmed.slice(6));
+          const content = data.choices?.[0]?.delta?.content;
+          if (content) controller.enqueue(encoder.encode(content));
+        } catch {
+          /* skip */
+        }
+      }
+    },
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -49,81 +98,44 @@ export async function POST(request: NextRequest) {
     CSS RULE: Place any @import rules at the ABSOLUTE TOP of the file, before @tailwind directives.
     Always include /App.js, /styles.css (with Tailwind @tailwind directives), and /package.json.`;
 
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openRouterKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://tolzy.me',
-        'X-Title': 'Tolzy Flow',
-      },
-      body: JSON.stringify({
-        model: 'qwen/qwen3.6-plus:free', 
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: prompt },
+    ];
+
+    let res: Response;
+    try {
+      res = await openRouterPostChatCompletionsWithRetry(openRouterKey, {
+        model: openRouterCodeModel(),
         stream: true,
         max_tokens: 8192,
         temperature: 0.2,
         top_p: 0.9,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt },
-        ],
-      }),
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      console.error('OpenRouter Error:', text);
+        messages,
+      });
+    } catch (e) {
+      if (e instanceof Error && e.message === 'OPENROUTER_RATE_LIMIT') {
+        return NextResponse.json(
+          { error: 'UPSTREAM_RATE_LIMIT', message: UPSTREAM_CONGESTION_USER_MESSAGE_AR },
+          { status: 429 }
+        );
+      }
+      console.error('OpenRouter generate error:', e);
       return NextResponse.json({ error: 'AI connection failed. Check your network.' }, { status: 500 });
     }
-
-    const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    const transformStream = new TransformStream({
-      transform(chunk, controller) {
-        buffer += decoder.decode(chunk, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (trimmed.startsWith('data: ') && !trimmed.includes('[DONE]')) {
-            try {
-              const data = JSON.parse(trimmed.slice(6));
-              const content = data.choices?.[0]?.delta?.content;
-              if (content) {
-                controller.enqueue(encoder.encode(content));
-              }
-            } catch (err) {}
-          }
-        }
-      },
-      flush(controller) {
-        const trimmed = buffer.trim();
-        if (trimmed.startsWith('data: ') && !trimmed.includes('[DONE]')) {
-          try {
-            const data = JSON.parse(trimmed.slice(6));
-            const content = data.choices?.[0]?.delta?.content;
-            if (content) controller.enqueue(encoder.encode(content));
-          } catch (err) {}
-        }
-      },
-    });
 
     if (!res.body) {
       return NextResponse.json({ error: 'Empty response stream' }, { status: 500 });
     }
 
-    return new Response(res.body.pipeThrough(transformStream), {
+    return new Response(res.body.pipeThrough(sseTokenStream()), {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'Cache-Control': 'no-cache, no-transform',
       },
     });
-
-  } catch (error: any) {
-    console.error('❌ OpenRouter Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  } catch (error: unknown) {
+    console.error('Generate route error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
