@@ -15,10 +15,6 @@ export interface ChatMessageData {
 
 interface Props {
   message: ChatMessageData;
-  isSharedView?: boolean;
-  feedback?: 'like' | 'dislike' | null;
-  onFeedback?: (messageId: string, type: 'like' | 'dislike') => void;
-  onShare?: () => void;
 }
 
 // ─── Markdown Parser ───────────────────────────────────────────────
@@ -281,9 +277,9 @@ function HtmlPreview({ code }: { code: string }) {
 }
 
 // ─── Main ChatMessage ─────────────────────────────────────────────
-import { ThumbsUp, ThumbsDown, Share, RotateCw, MoreHorizontal, Download } from 'lucide-react';
+import { RotateCw, MoreHorizontal, Download } from 'lucide-react';
 
-export default function ChatMessage({ message, isSharedView = false, feedback = null, onFeedback, onShare }: Props) {
+export default function ChatMessage({ message }: Props) {
   const isUser = message.role === 'user';
   const [copiedResponse, setCopiedResponse] = useState(false);
 
@@ -405,27 +401,6 @@ export default function ChatMessage({ message, isSharedView = false, feedback = 
                 title="نسخ الإجابة"
               >
                 {copiedResponse ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
-              </button>
-              <button
-                onClick={() => onFeedback?.(message.id, 'like')}
-                disabled={isSharedView || !onFeedback}
-                className={`p-1.5 rounded-md transition-colors ${feedback === 'like' ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10' : 'hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-white/5'} disabled:opacity-40 disabled:cursor-not-allowed`}
-              >
-                <ThumbsUp size={16} />
-              </button>
-              <button
-                onClick={() => onFeedback?.(message.id, 'dislike')}
-                disabled={isSharedView || !onFeedback}
-                className={`p-1.5 rounded-md transition-colors ${feedback === 'dislike' ? 'text-red-500 bg-red-50 dark:bg-red-500/10' : 'hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-white/5'} disabled:opacity-40 disabled:cursor-not-allowed`}
-              >
-                <ThumbsDown size={16} />
-              </button>
-              <button
-                onClick={() => onShare?.()}
-                disabled={isSharedView || !onShare}
-                className="p-1.5 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <Share size={16} />
               </button>
               <button className="p-1.5 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-md transition-colors">
                 <RotateCw size={16} />

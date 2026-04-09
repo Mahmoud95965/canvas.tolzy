@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase-admin';
-import { supabaseAdmin } from '@/lib/supabase';
 import dns from 'node:dns';
-import {
-  LOCK_PREMIUM_MODELS_DURING_LAUNCH,
-  PRO_LAUNCH_GUARD,
-  normalizePlan,
-  planFromPlanRow,
-  planFromEntitlements,
-} from '@/lib/plan';
+import { LOCK_PREMIUM_MODELS_DURING_LAUNCH } from '@/lib/plan';
 
 if (typeof dns.setDefaultResultOrder === 'function') {
   dns.setDefaultResultOrder('ipv4first');
@@ -17,7 +10,7 @@ if (typeof dns.setDefaultResultOrder === 'function') {
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-type AuthPayload = { uid: string; email: string | null };
+type AuthPayload = { uid: string };
 
 async function verifyAuth(request: NextRequest): Promise<AuthPayload | null> {
   const authHeader = request.headers.get('Authorization');
@@ -26,72 +19,10 @@ async function verifyAuth(request: NextRequest): Promise<AuthPayload | null> {
   try {
     if (!adminAuth) return null;
     const decoded = await adminAuth.verifyIdToken(token);
-    return { uid: decoded.uid, email: decoded.email ?? null };
+    return { uid: decoded.uid };
   } catch {
     return null;
   }
-}
-
-async function findPlanRow(auth: AuthPayload): Promise<Record<string, unknown> | null> {
-  const tableCandidates = ['plan', 'plans', 'user_plans'];
-  const selectors: Array<{ column: string; value: string; mode: 'eq' | 'ilike' }> = [
-    { column: 'user_id', value: auth.uid, mode: 'eq' },
-    { column: 'uid', value: auth.uid, mode: 'eq' },
-    { column: 'userId', value: auth.uid, mode: 'eq' },
-  ];
-
-  if (auth.email) {
-    selectors.push({ column: 'email', value: auth.email, mode: 'eq' });
-    selectors.push({ column: 'user_email', value: auth.email, mode: 'eq' });
-    selectors.push({ column: 'email_address', value: auth.email, mode: 'eq' });
-    selectors.push({ column: 'mail', value: auth.email, mode: 'eq' });
-    selectors.push({ column: 'email', value: auth.email, mode: 'ilike' });
-    selectors.push({ column: 'user_email', value: auth.email, mode: 'ilike' });
-    selectors.push({ column: 'email_address', value: auth.email, mode: 'ilike' });
-    selectors.push({ column: 'mail', value: auth.email, mode: 'ilike' });
-  }
-
-  for (const tableName of tableCandidates) {
-    for (const selector of selectors) {
-      let query = supabaseAdmin.from(tableName).select('*');
-      query = selector.mode === 'ilike' ? query.ilike(selector.column, selector.value) : query.eq(selector.column, selector.value);
-      const { data, error } = await query.order('updated_at', { ascending: false }).limit(1);
-
-      if (!error && Array.isArray(data) && data.length > 0) {
-        return data[0] as Record<string, unknown>;
-      }
-    }
-  }
-
-  return null;
-}
-
-function isMissingTableError(error: any): boolean {
-  return error?.code === 'PGRST205';
-}
-
-async function findUserLimitsRow(auth: AuthPayload): Promise<Record<string, unknown> | null> {
-  const selectors: Array<{ column: string; value: string; mode: 'eq' | 'ilike' }> = [
-    { column: 'user_id', value: auth.uid, mode: 'eq' },
-    { column: 'uid', value: auth.uid, mode: 'eq' },
-    { column: 'userId', value: auth.uid, mode: 'eq' },
-  ];
-
-  if (auth.email) {
-    selectors.push({ column: 'email', value: auth.email, mode: 'eq' });
-    selectors.push({ column: 'email', value: auth.email, mode: 'ilike' });
-  }
-
-  for (const selector of selectors) {
-    let query = supabaseAdmin.from('user_limits').select('*');
-    query = selector.mode === 'ilike' ? query.ilike(selector.column, selector.value) : query.eq(selector.column, selector.value);
-    const { data, error } = await query.order('updated_at', { ascending: false }).limit(1);
-    if (!error && Array.isArray(data) && data.length > 0) {
-      return data[0] as Record<string, unknown>;
-    }
-  }
-
-  return null;
 }
 
 const SYSTEM_PROMPT = `أنت "Tolzy Copilot"، مساعد ذكي فائق القدرات ونموذج لغوي ضخم. 
@@ -141,42 +72,11 @@ export async function POST(request: NextRequest) {
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ error: 'Messages array required' }, { status: 400 });
     }
-
-    let currentPlan: 'free' | 'pro' = 'free';
-    const planRow = await findPlanRow(auth);
-    if (planRow) {
-      currentPlan = planFromPlanRow(planRow);
-    } else {
-      const limitsRow = await findUserLimitsRow(auth);
-      if (limitsRow) {
-        currentPlan = planFromPlanRow(limitsRow);
-      } else {
-        const { data: entitlementRows, error: entitlementError } = await supabaseAdmin
-          .from('service_entitlements')
-          .select('service_key,status')
-          .eq('user_id', auth.uid);
-        if (!entitlementError) {
-          currentPlan = planFromEntitlements(entitlementRows || []);
-        } else if (!isMissingTableError(entitlementError)) {
-          throw entitlementError;
-        }
-      }
-    }
-    const normalizedPlan = normalizePlan(currentPlan);
-
-    if (PRO_LAUNCH_GUARD && normalizedPlan !== 'pro') {
-      return NextResponse.json({ error: 'PRO_SUBSCRIPTION_REQUIRED' }, { status: 403 });
-    }
-
     if (LOCK_PREMIUM_MODELS_DURING_LAUNCH && (modelType === 'thinker' || modelType === 'pro')) {
       return NextResponse.json({ error: 'PREMIUM_MODELS_TEMPORARILY_LOCKED' }, { status: 403 });
     }
-
-    if ((modelType === 'thinker' || modelType === 'pro') && normalizedPlan !== 'pro') {
-      return NextResponse.json({ error: 'PRO_REQUIRED' }, { status: 403 });
-    }
-
-    const model = getModelString(modelType);
+    const effectiveModelType = 'flash';
+    const model = getModelString(effectiveModelType);
 
     // 3. تجهيز الرسائل بصيغة OpenRouter/OpenAI القياسية
     // نضع الـ System Prompt كأول رسالة في المصفوفة
@@ -198,8 +98,8 @@ export async function POST(request: NextRequest) {
         model: model,
         messages: openRouterMessages,
         stream: false,
-        temperature: 0.7,
-        max_tokens: 8192,
+        temperature: 0.2,
+        max_tokens: 1536,
       })
     });
 

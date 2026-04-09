@@ -8,8 +8,6 @@ import ChatMessage, { ChatMessageData } from '@/components/chat/ChatMessage';
 import ChatSidebar, { Conversation } from '@/components/chat/ChatSidebar';
 import { useTheme } from '@/lib/theme-context';
 import { LOCK_PREMIUM_MODELS_DURING_LAUNCH, PRO_LAUNCH_GUARD } from '@/lib/plan';
-import FavoriteButton from '@/components/common/FavoriteButton';
-import ShareButton from '@/components/common/ShareButton';
 
 const PRICING_URL = '/pricing';
 const SPEECH_RECOGNITION_LANG = 'ar-EG';
@@ -57,7 +55,6 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessageData[]>([]);
-  const [feedbackMap, setFeedbackMap] = useState<Record<string, 'like' | 'dislike'>>({});
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -218,7 +215,6 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
         imageUrl: m.image_url || undefined,
       }));
       setMessages(mapped);
-      setFeedbackMap({});
       setActiveId(id);
       setSidebarOpen(false);
       
@@ -230,7 +226,6 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
   const newConversation = useCallback(() => {
     setActiveId(null);
     setMessages([]);
-    setFeedbackMap({});
     setInput('');
     setSidebarOpen(false);
     textareaRef.current?.focus();
@@ -343,48 +338,6 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
     }
   }, [input, isStreaming, messages, activeId, getIdToken, createConversation, saveMessage, selectedModel, plan, router]);
 
-  const handleMessageFeedback = useCallback(async (messageId: string, type: 'like' | 'dislike') => {
-    try {
-      const token = await getIdToken();
-      const res = await fetch('/api/messages/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ messageId, feedbackType: type }),
-      });
-      if (!res.ok) throw new Error('Feedback failed');
-      setFeedbackMap(prev => ({ ...prev, [messageId]: type }));
-    } catch (err) {
-      console.error(err);
-    }
-  }, [getIdToken]);
-
-  const handleShareConversation = useCallback(async () => {
-    try {
-      if (!activeId || messages.length === 0) return;
-      const token = await getIdToken();
-      const activeConv = conversations.find(c => c.id === activeId);
-
-      const res = await fetch('/api/chat/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          chatId: activeId,
-          title: activeConv?.title || 'محادثة Tolzy AI',
-          currentMessages: messages,
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.shareUrl) throw new Error(data.error || 'Share failed');
-
-      await navigator.clipboard.writeText(data.shareUrl);
-      alert('تم إنشاء رابط المشاركة ونسخه بنجاح ✅');
-    } catch (err) {
-      console.error(err);
-      alert('تعذر إنشاء رابط المشاركة حالياً');
-    }
-  }, [activeId, messages, getIdToken, conversations]);
-
   if (loading || !user) {
     return (
       <div className="h-screen w-full bg-white dark:bg-[#09090b] flex items-center justify-center transition-colors">
@@ -451,7 +404,7 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
 
       {/* Main Area */}
       <div className="flex-1 flex flex-col min-w-0 relative">
-        
+
         {/* Top Header - Floating and Minimal */}
         <header className="absolute top-0 inset-x-0 h-16 flex items-center justify-between px-4 sm:px-6 z-20 transition-colors pointer-events-none">
           <div className="flex items-center gap-3 pointer-events-auto">
@@ -582,19 +535,10 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
             </div>
           ) : (
             <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 w-full flex-1">
-              {activeId && (
-                <div className="mb-3 flex items-center justify-end gap-2">
-                  <FavoriteButton itemId={activeId} itemType="chat" initialIsFavorite={false} />
-                  <ShareButton chatId={activeId} />
-                </div>
-              )}
               {messages.map(msg => (
                 <ChatMessage
                   key={msg.id}
                   message={msg}
-                  feedback={feedbackMap[msg.id] || null}
-                  onFeedback={handleMessageFeedback}
-                  onShare={handleShareConversation}
                 />
               ))}
               <div ref={chatEndRef} />
