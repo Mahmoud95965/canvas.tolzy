@@ -46,7 +46,6 @@ export default async function SharedChatPage({ params }: { params: { slug: strin
                   role: msg.role === 'assistant' ? 'assistant' : 'user',
                   content: msg.content || '',
                 }}
-                isSharedView
               />
             ))}
           </div>
