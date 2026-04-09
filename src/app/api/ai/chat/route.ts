@@ -236,6 +236,9 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error && error.message === 'INVALID_MESSAGES') {
       return NextResponse.json({ error: 'Invalid request payload' }, { status: 400 });
     }
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Internal Server Error',
+      details: error?.message || String(error)
+    }, { status: 500 });
   }
 }
