@@ -3,6 +3,8 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { verifyIntegrationToken } from '@/lib/integration-auth';
 import { planFromEntitlements } from '@/lib/plan';
 
+export const dynamic = 'force-dynamic';
+
 type EntitlementRow = {
   service_key: string;
   status: string;

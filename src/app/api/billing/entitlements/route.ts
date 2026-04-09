@@ -3,6 +3,8 @@ import { adminAuth } from '@/lib/firebase-admin';
 import { supabaseAdmin } from '@/lib/supabase';
 import { planFromEntitlements, planFromPlanRow } from '@/lib/plan';
 
+export const dynamic = 'force-dynamic';
+
 type AuthPayload = { uid: string; email: string | null };
 
 async function verifyAuth(req: NextRequest): Promise<AuthPayload | null> {
