@@ -139,6 +139,29 @@ export default function LandingPage() {
           </Link>
         </div>
 
+        {/* ── Live Demo Video ── */}
+        <section className="mt-16 w-full max-w-5xl px-4 animate-fade-in-up" style={{ animationDelay: '360ms' }}>
+          <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md p-4 md:p-6 shadow-[0_0_40px_rgba(79,70,229,0.18)]">
+            <div className="mb-4 text-right">
+              <h2 className="text-xl md:text-2xl font-bold text-white">تجربة حية لمنصة Tolzy</h2>
+              <p className="text-zinc-400 text-sm mt-1">شاهد كيف يعمل الموقع فعليًا في سيناريو استخدام حقيقي.</p>
+            </div>
+            <div className="rounded-2xl p-[1.5px] bg-gradient-to-r from-indigo-500/80 via-fuchsia-500/80 to-pink-500/80 shadow-[0_0_36px_rgba(168,85,247,0.35)]">
+              <div className="rounded-2xl overflow-hidden bg-black border border-white/10">
+                <video
+                  src="https://fpikysywaihykgdhoeim.supabase.co/storage/v1/object/public/TOLZY%20AI/Custom%20recording%202026-04-09%2018-15-23.mp4"
+                  preload="metadata"
+                  playsInline
+                  autoPlay
+                  muted
+                  loop
+                  className="w-full h-auto max-h-[620px] object-cover"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── Features Grid ── */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-24 max-w-5xl w-full px-4 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-right backdrop-blur-sm hover:bg-white/10 transition-colors">
