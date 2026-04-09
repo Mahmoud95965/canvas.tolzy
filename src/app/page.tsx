@@ -3,104 +3,168 @@
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { Sparkles, ArrowLeft, Layers, MessageSquare, Zap, Target } from 'lucide-react';
 
 export default function LandingPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, plan } = useAuth();
   const router = useRouter();
-  const [prompt, setPrompt] = useState('');
+  const [heroPrompt, setHeroPrompt] = useState('');
 
-  useEffect(() => {
-    if (!loading && user) {
-      router.push('/dashboard');
+  const heroState = useMemo(() => {
+    if (!user) {
+      return {
+        subtitle: 'أنشئ حسابك أو سجل الدخول لتجربة Tolzy Copilot.',
+        ctaHref: '/login',
+        ctaText: 'تسجيل الدخول',
+      };
     }
-  }, [user, loading, router]);
+    if (plan === 'pro') {
+      return {
+        subtitle: 'اكتب طلبك واضغط Enter للمتابعة مباشرة إلى TOLZY AI.',
+        ctaHref: '/app',
+        ctaText: 'الانتقال إلى Copilot',
+      };
+    }
+    return {
+      subtitle: 'للوصول إلى القدرات المتقدمة، قم بالترقية إلى Tolzy Pro.',
+      ctaHref: '/pricing',
+      ctaText: 'ترقية إلى Pro',
+    };
+  }, [user, plan]);
 
-  const handlePromptSubmit = () => {
-    if (prompt.trim()) {
-      // Pass the prompt via localStorage or query params to dashboard later if needed
+  const handleHeroEnter = () => {
+    const text = heroPrompt.trim();
+    if (!text) return;
+    if (!user) {
       router.push('/login');
+      return;
     }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handlePromptSubmit();
+    if (plan === 'pro') {
+      window.location.href = `https://ai.tolzy.me?prompt=${encodeURIComponent(text)}`;
+      return;
     }
+    router.push('/pricing');
   };
 
   return (
-    <div className="lovable-landing">
-      {/* Dynamic Background Mesh */}
-      <div className="mesh-bg">
-        <div className="blob-1" />
-        <div className="blob-2" />
-        <div className="blob-3" />
+    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col font-sans overflow-hidden rtl relative">
+      
+      {/* ── Background Effects ── */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse" style={{ animationDuration: '4s' }} />
+        <div className="absolute bottom-[-10%] left-[-5%] w-[400px] h-[400px] bg-fuchsia-600/20 rounded-full blur-[100px] mix-blend-screen animate-pulse" style={{ animationDuration: '5s' }} />
+        <div className="absolute top-[40%] left-[30%] w-[600px] h-[600px] bg-violet-600/10 rounded-full blur-[150px] mix-blend-screen" />
+        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-[0.02]" />
       </div>
 
-      {/* Navigation */}
-      <nav className="lovable-nav">
-        <div className="lovable-logo">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#ec4899', fill: '#ec4899' }}>
-            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-          </svg>
-          Tolzy
+      {/* ── Navbar ── */}
+      <nav className="h-20 flex items-center justify-between px-6 md:px-12 relative z-10 border-b border-white/5 bg-zinc-950/50 backdrop-blur-md">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-fuchsia-600 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.4)]">
+            <Layers size={20} className="text-white" />
+          </div>
+          <span className="font-extrabold text-2xl tracking-tight text-transparent bg-clip-text bg-gradient-to-l from-white to-zinc-400">
+            Tolzy AI
+          </span>
         </div>
         
-        <div className="lovable-links">
-          <a href="#">Solutions <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg></a>
-          <a href="#">Resources <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg></a>
-          <a href="#">Enterprise</a>
-          <a href="#">Pricing</a>
-          <a href="#">Community</a>
-          <a href="#">Security</a>
-        </div>
-
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <Link href="/login" style={{ color: 'white', fontSize: '14px', textDecoration: 'none', padding: '8px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)' }}>
-            Log in
+        <div className="flex items-center gap-4">
+          <Link 
+            href="/login" 
+            className="text-sm font-semibold text-zinc-300 hover:text-white transition-colors px-4 py-2"
+          >
+            تسجيل الدخول
           </Link>
-          <Link href="/login" style={{ color: 'black', fontSize: '14px', textDecoration: 'none', padding: '8px 16px', background: 'white', borderRadius: '6px', fontWeight: 500 }}>
-            Get started
+          <Link 
+            href="/login" 
+            className="flex items-center gap-2 text-sm font-bold text-black bg-white px-5 py-2.5 rounded-full hover:bg-zinc-200 hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+          >
+            ابدأ الآن <ArrowLeft size={16} />
           </Link>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="lovable-hero">
-        <h1 className="lovable-h1">Build something Tolzy</h1>
-        <p className="lovable-p">Create apps and websites by chatting with AI</p>
+      {/* ── Hero Section ── */}
+      <main className="flex-1 flex flex-col items-center justify-center text-center px-4 relative z-10 py-20 pb-32">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-indigo-300 text-sm font-medium mb-8 backdrop-blur-sm animate-fade-in-up">
+          <Sparkles size={16} />
+          <span>الذكاء الاصطناعي الأكثر تطوراً في العالم العربي</span>
+        </div>
 
-        {/* AI Prompt Box */}
-        <div className="lovable-prompt-box">
-          <textarea
-            className="lovable-input"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask Tolzy to create a..."
-            autoFocus
-          />
+        <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-6 leading-[1.2] max-w-4xl tracking-tight animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+          مساعدك الذكي لإنجاز <br className="hidden md:block"/>
+          <span className="text-transparent bg-clip-text bg-gradient-to-l from-indigo-400 via-fuchsia-400 to-pink-400">
+            كل شيء في ثوانٍ.
+          </span>
+        </h1>
 
-          <div className="lovable-prompt-actions">
-            <button className="лов-icon-btn" title="Add File">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <p className="text-lg md:text-xl text-zinc-400 mb-10 max-w-2xl leading-relaxed animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+          سواء كنت تبحث عن إجابات، أو تحتاج إلى كتابة أكواد برمجية معقدة، أو حتى تصميم واجهات مستخدم مذهلة ورؤيتها تعمل مباشرة. Tolzy هو الحل المتكامل.
+        </p>
+
+        <div className="w-full max-w-2xl mb-5 animate-fade-in-up" style={{ animationDelay: '280ms' }}>
+          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-2 flex items-center gap-2">
+            <input
+              value={heroPrompt}
+              onChange={(event) => setHeroPrompt(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  handleHeroEnter();
+                }
+              }}
+              placeholder="اكتب فكرة أو سؤال... ثم اضغط Enter"
+              className="flex-1 bg-transparent px-3 py-2 text-sm outline-none text-white placeholder:text-zinc-400"
+              dir="rtl"
+            />
+            <button
+              onClick={handleHeroEnter}
+              className="text-xs font-bold bg-white text-black px-4 py-2 rounded-xl hover:bg-zinc-200 transition"
+            >
+              إرسال
             </button>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button className="лов-icon-btn" style={{ background: 'transparent', border: 'none', opacity: 0.7 }}>
-                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-              </button>
-              <button className="лов-icon-btn" style={{ background: 'transparent', border: 'none', opacity: 0.7 }}>
-                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 10 10H12V2Z"/><path d="M12 12 2.1 7.1"/></svg>
-              </button>
-              <button className="лов-submit-btn" onClick={handlePromptSubmit}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
-              </button>
+          </div>
+          <p className="text-sm text-zinc-400 mt-3">
+            {heroState.subtitle}
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center gap-4 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+          <Link 
+            href={heroState.ctaHref}
+            className="flex items-center gap-2 text-lg font-bold text-white bg-indigo-600 px-8 py-4 rounded-full hover:bg-indigo-700 hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(79,70,229,0.5)]"
+          >
+            {heroState.ctaText} <ArrowLeft size={20} />
+          </Link>
+        </div>
+
+        {/* ── Features Grid ── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-24 max-w-5xl w-full px-4 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-right backdrop-blur-sm hover:bg-white/10 transition-colors">
+            <div className="w-12 h-12 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-4">
+              <MessageSquare size={24} />
             </div>
+            <h3 className="text-xl font-bold text-white mb-2">محادثات ذكية</h3>
+            <p className="text-zinc-400 text-sm leading-relaxed font-medium">اطرح أي سؤال وسيجيبك Tolzy بأسلوب دقيق، موجز وداعم بالكامل للغة العربية.</p>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-right backdrop-blur-sm hover:bg-white/10 transition-colors">
+            <div className="w-12 h-12 rounded-xl bg-fuchsia-500/20 text-fuchsia-400 flex items-center justify-center mb-4">
+              <Zap size={24} />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">تصميم واجهات فوري</h3>
+            <p className="text-zinc-400 text-sm leading-relaxed font-medium">اطلب تصميم صفحة وسيولدها لك فحصاً مباشراً عبر محاكي حي (Live Preview) داخل المحادثة.</p>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-right backdrop-blur-sm hover:bg-white/10 transition-colors">
+            <div className="w-12 h-12 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center mb-4">
+              <Target size={24} />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">تحليل الصور</h3>
+            <p className="text-zinc-400 text-sm leading-relaxed font-medium">ارفع أي صورة واطلب من تولزي شرحها واستخراج البيانات أو الأكواد منها بدقة متناهية.</p>
           </div>
         </div>
-      </section>
+      </main>
+
     </div>
   );
 }

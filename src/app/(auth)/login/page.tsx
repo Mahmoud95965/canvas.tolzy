@@ -4,6 +4,29 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+function getReadableAuthError(err: unknown): string {
+  const code = typeof err === 'object' && err !== null && 'code' in err ? String((err as any).code) : '';
+  const message = err instanceof Error ? err.message : 'Failed to sign in';
+
+  if (code === 'auth/unauthorized-domain') {
+    return 'هذا الدومين غير مضاف في Firebase Authorized Domains. أضف gateway.tolzy.me من إعدادات Firebase Authentication.';
+  }
+  if (code === 'auth/invalid-api-key') {
+    return 'Firebase API Key غير صحيح أو غير مطابق للمشروع الحالي.';
+  }
+  if (code === 'auth/operation-not-allowed') {
+    return 'طريقة تسجيل الدخول غير مفعلة في Firebase Authentication.';
+  }
+  if (code === 'auth/popup-blocked') {
+    return 'المتصفح حظر نافذة تسجيل الدخول. اسمح بالنوافذ المنبثقة ثم حاول مرة أخرى.';
+  }
+  if (code === 'auth/popup-closed-by-user') {
+    return 'تم إغلاق نافذة تسجيل الدخول قبل اكتمال العملية.';
+  }
+
+  return message;
+}
+
 export default function LoginPage() {
   const { user, loading, signInWithGoogle } = useAuth();
   const router = useRouter();
@@ -23,7 +46,7 @@ export default function LoginPage() {
       await signInWithGoogle();
       router.push('/dashboard');
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to sign in';
+      const errorMessage = getReadableAuthError(err);
       setError(errorMessage);
     } finally {
       setIsSigningIn(false);

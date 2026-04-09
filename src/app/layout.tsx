@@ -1,15 +1,22 @@
 import type { Metadata } from 'next';
+import { Cairo } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
+import { ThemeProvider } from '@/lib/theme-context';
+
+const cairo = Cairo({ subsets: ['arabic', 'latin'], display: 'swap' });
 
 export const metadata: Metadata = {
-  title: 'Tolzy Pages — Build Beautiful Websites Visually',
-  description:
-    'Create stunning websites without code. Drag, drop, and publish in minutes with Tolzy Pages visual website builder.',
-  keywords: ['website builder', 'drag and drop', 'no code', 'tolzy', 'visual editor'],
+  title: 'Tolzy AI — مساعدك الذكي المتقدم',
+  description: 'Tolzy AI — مساعد ذكي متقدم للإجابة على الأسئلة، كتابة الكود، تحليل الصور، وتصميم واجهات مذهلة.',
+  keywords: ['Tolzy AI', 'AI assistant', 'مساعد ذكاء اصطناعي', 'chatbot', 'code generation'],
+  icons: {
+    icon: '/icon.png',
+    apple: '/icon.png',
+  },
   openGraph: {
-    title: 'Tolzy Pages — Build Beautiful Websites Visually',
-    description: 'Create stunning websites without code.',
+  title: 'Tolzy AI — مساعدك الذكي المتقدم',
+    description: 'مساعد ذكي لكل شيء — كود، تصاميم، أسئلة، وتحليل صور.',
     type: 'website',
   },
 };
@@ -20,9 +27,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>
-        <AuthProvider>{children}</AuthProvider>
+    <html lang="ar" dir="rtl" className={cairo.className}>
+      <head>
+        <link rel="icon" href="/icon.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/icon.png" />
+      </head>
+      <body className="bg-white dark:bg-[#0a0a0a] text-zinc-900 dark:text-white transition-colors duration-300">
+        <ThemeProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
