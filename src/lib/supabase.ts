@@ -29,4 +29,6 @@ export const supabaseAdmin = createClient(
   }
 );
 
-export const isSupabaseConfigured = !!supabaseUrl && !!supabaseServiceKey;
+export function isSupabaseConfigured(): boolean {
+  return !!supabaseUrl && !!supabaseServiceKey;
+}
