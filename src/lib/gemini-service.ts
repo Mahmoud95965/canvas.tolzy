@@ -54,29 +54,35 @@ export async function geminiChatWithGrounding(
       history: history.slice(0, -1), // Exclude the last message (it's the current one)
     });
 
-    // Build the tools array with search grounding if enabled
-    const tools: Parameters<typeof chat.sendMessage>[1] = {};
+    // Build request options with optional search grounding
+    interface SendMessageOptions {
+      tools?: Array<{ googleSearch: Record<string, never> }>;
+    }
+
+    const sendOptions: SendMessageOptions = {};
     if (enableSearchGrounding) {
-      tools.tools = [
-        {
-          googleSearch: {},
-        },
-      ];
+      sendOptions.tools = [{ googleSearch: {} }];
     }
 
     // Send message
-    const response = await chat.sendMessage(userMessage.content, tools);
+    const response = await chat.sendMessage(userMessage.content, sendOptions as any);
 
-    // Extract text from response
-    const text = response.response?.text?.() || response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    // Extract text from response using .text() method or fallback
+    let text = '';
+    if (response.response?.text) {
+      text = typeof response.response.text === 'function' ? response.response.text() : response.response.text;
+    }
+    if (!text && (response as any).text) {
+      text = typeof (response as any).text === 'function' ? (response as any).text() : (response as any).text;
+    }
     if (!text) {
       throw new Error('No text content in response');
     }
 
     // Extract citations if available
     let citations: string[] = [];
-    if (response.response?.groundingMetadata?.searchEntryPoint) {
-      citations = [response.response.groundingMetadata.searchEntryPoint];
+    if ((response as any).groundingMetadata?.searchEntryPoint) {
+      citations = [(response as any).groundingMetadata.searchEntryPoint];
     }
 
     return {
@@ -112,22 +118,35 @@ export async function geminiSingleRequest(
       systemInstruction: systemPrompt,
     });
 
-    const generationConfig = {
-      maxOutputTokens: 4096,
-      temperature: 0.2,
-    };
-
-    const tools: Parameters<typeof model.generateContent>[1] = { generationConfig };
-    if (enableSearchGrounding) {
-      tools.tools = [
-        {
-          googleSearch: {},
-        },
-      ];
+    interface GenerateContentOptions {
+      generationConfig?: {
+        maxOutputTokens?: number;
+        temperature?: number;
+      };
+      tools?: Array<{ googleSearch: Record<string, never> }>;
     }
 
-    const response = await model.generateContent(prompt, tools);
-    const text = response.response?.text?.() || response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const options: GenerateContentOptions = {
+      generationConfig: {
+        maxOutputTokens: 4096,
+        temperature: 0.2,
+      },
+    };
+
+    if (enableSearchGrounding) {
+      options.tools = [{ googleSearch: {} }];
+    }
+
+    const response = await model.generateContent(prompt, options as any);
+    
+    // Extract text from response
+    let text = '';
+    if (response.response?.text) {
+      text = typeof response.response.text === 'function' ? response.response.text() : response.response.text;
+    }
+    if (!text && (response as any).text) {
+      text = typeof (response as any).text === 'function' ? (response as any).text() : (response as any).text;
+    }
     if (!text) {
       throw new Error('No text content in response');
     }
