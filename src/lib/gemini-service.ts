@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const client = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const client = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
 
 export interface GeminiMessage {
   role: 'user' | 'assistant';
