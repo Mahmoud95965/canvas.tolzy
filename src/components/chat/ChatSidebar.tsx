@@ -50,7 +50,7 @@ export default function ChatSidebar({ conversations, activeId, onSelect, onNew, 
   const groups = groupByDate(conversations);
 
   return (
-    <div className="h-full flex flex-col bg-zinc-50 dark:bg-zinc-950 transition-colors" dir="rtl">
+    <div className="h-full flex flex-col bg-background transition-colors" dir="rtl">
       {/* Mobile Close Button / Desktop Toggle */}
       <div className={`pt-3 ${isExpanded ? 'px-3 flex justify-between' : 'flex justify-center'}`}>
         {/* Toggle Button (Desktop Only) */}
@@ -75,7 +75,7 @@ export default function ChatSidebar({ conversations, activeId, onSelect, onNew, 
       <div className={`py-4 md:pt-6 ${isExpanded ? 'px-4' : 'flex justify-center'}`}>
         <button
           onClick={onNew}
-          className={`flex items-center justify-center gap-3 py-3 rounded-2xl bg-zinc-200/50 dark:bg-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white font-bold transition-all ${isExpanded ? 'px-4 w-fit text-[15px]' : 'w-10 h-10 px-0'}`}
+          className={`flex items-center justify-center gap-3 py-3 rounded-2xl bg-white dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-white font-bold border border-zinc-200 dark:border-white/5 shadow-premium transition-all ${isExpanded ? 'px-4 w-fit text-[15px]' : 'w-10 h-10 px-0'}`}
           title="محادثة جديدة"
         >
           <SquarePen size={18} className="shrink-0" />
@@ -107,7 +107,7 @@ export default function ChatSidebar({ conversations, activeId, onSelect, onNew, 
                       onClick={() => onSelect(conv.id)}
                       className={`group flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
                         activeId === conv.id
-                          ? 'bg-zinc-200/80 dark:bg-white/10 text-zinc-900 dark:text-white font-bold'
+                          ? 'bg-zinc-100 dark:bg-white/10 text-indigo-700 dark:text-white font-bold border border-zinc-200 dark:border-transparent'
                           : 'text-zinc-600 dark:text-zinc-400 font-medium hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-zinc-200'
                       }`}
                     >

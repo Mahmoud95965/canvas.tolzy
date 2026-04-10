@@ -172,14 +172,9 @@ function parseMarkdown(text: string): React.ReactNode[] {
     }
 
     // Blockquote
-    if (line.startsWith('> ')) {
-      result.push(
-        <blockquote key={i} className="border-l-2 border-indigo-500 pl-4 my-2 text-zinc-400 italic text-sm">
+        <blockquote key={i} className="border-r-4 border-indigo-500 pr-4 my-3 text-zinc-500 dark:text-zinc-400 italic text-[14px]">
           {inlineMarkdown(line.slice(2))}
         </blockquote>
-      );
-      i++; continue;
-    }
 
     // Empty line
     if (line.trim() === '') {
@@ -236,7 +231,7 @@ function inlineMarkdown(text: string): React.ReactNode {
     // Italic
     if (part.startsWith('*') && part.endsWith('*')) return <em key={i} className="text-zinc-800 dark:text-zinc-300 italic">{part.slice(1, -1)}</em>;
     // Inline Code
-    if (part.startsWith('`') && part.endsWith('`')) return <code key={i} className="bg-zinc-100 dark:bg-zinc-800 text-indigo-600 dark:text-indigo-300 px-1.5 py-0.5 rounded text-[12px] font-mono border border-zinc-200 dark:border-transparent" dir="ltr">{part.slice(1, -1)}</code>;
+    if (part.startsWith('`') && part.endsWith('`')) return <code key={i} className="bg-zinc-100 dark:bg-white/5 text-indigo-600 dark:text-indigo-300 px-1.5 py-0.5 rounded text-[12px] font-mono border border-zinc-200 dark:border-white/10" dir="ltr">{part.slice(1, -1)}</code>;
     
     // Raw URL
     if ((part.startsWith('http://') || part.startsWith('https://')) && !part.endsWith(')')) {
@@ -261,9 +256,9 @@ function HtmlPreview({ code }: { code: string }) {
   const srcDoc = code;
 
   return (
-    <div className="my-4 rounded-xl overflow-hidden border border-indigo-500/30 bg-[#0d0d0d] shadow-[0_0_30px_rgba(99,102,241,0.1)]">
+    <div className="my-4 rounded-xl overflow-hidden border border-indigo-500/30 bg-white dark:bg-[#0d0d0d] shadow-premium">
       {/* Preview Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-indigo-500/10 border-b border-indigo-500/20">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-indigo-50 dark:bg-indigo-500/10 border-b border-indigo-100 dark:border-indigo-500/20">
         <div className="flex items-center gap-2">
           <div className="flex gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full bg-zinc-600" />
@@ -277,10 +272,10 @@ function HtmlPreview({ code }: { code: string }) {
         <div className="flex items-center gap-2">
           <button
             onClick={copy}
-            className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-white transition-colors border border-white/10 px-2 py-1 rounded shadow-sm bg-white/5"
+            className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400 hover:text-foreground transition-colors border border-zinc-200 dark:border-white/10 px-2 py-1 rounded shadow-sm bg-white dark:bg-white/5 transition-all"
           >
-            {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
-            {copied ? 'تم النسخ' : 'نسخ الكود خلفياً'}
+            {copied ? <Check size={11} className="text-emerald-600 dark:text-emerald-400" /> : <Copy size={11} />}
+            {copied ? 'تم النسخ' : 'نسخ الكود'}
           </button>
         </div>
       </div>
@@ -314,7 +309,7 @@ export default function ChatMessage({ message }: Props) {
       <div className="flex justify-end mb-6">
         <div className="max-w-[80%] flex flex-col gap-2 items-end">
           {message.content && (
-            <div dir="auto" className="bg-indigo-600 text-white dark:bg-zinc-800 dark:text-white px-4 py-3 rounded-2xl rounded-tl-sm text-[15px] font-medium leading-relaxed shadow-sm whitespace-pre-wrap text-right">
+            <div dir="auto" className="bg-indigo-600 text-white dark:bg-zinc-800 dark:text-white px-4 py-3 rounded-[24px] rounded-tl-sm text-[15px] font-medium leading-relaxed shadow-premium transition-all whitespace-pre-wrap text-right">
               {message.content}
             </div>
           )}

@@ -110,18 +110,7 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
     }
   }, [input]);
   
-  // Auto-submit prompt from URL
-  useEffect(() => {
-    if (user && !loading && !isStreaming) {
-      const params = new URLSearchParams(window.location.search);
-      const p = params.get('prompt');
-      if (p) {
-        // Clear param so it doesn't resend on refresh
-        window.history.replaceState(null, '', window.location.pathname);
-        handleSend(p);
-      }
-    }
-  }, [user, loading, isStreaming, handleSend]);
+
 
   useEffect(() => {
     if (LOCK_PREMIUM_MODELS_DURING_LAUNCH && selectedModel === 'pro') {
@@ -434,6 +423,19 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
     }
   }, [input, isStreaming, messages, activeId, getIdToken, createConversation, saveMessage, selectedModel, plan, router]);
 
+  // Auto-submit prompt from URL
+  useEffect(() => {
+    if (user && !loading && !isStreaming) {
+      const params = new URLSearchParams(window.location.search);
+      const p = params.get('prompt');
+      if (p) {
+        // Clear param so it doesn't resend on refresh
+        window.history.replaceState(null, '', window.location.pathname);
+        handleSend(p);
+      }
+    }
+  }, [user, loading, isStreaming, handleSend]);
+
   if (loading || !user) {
     return (
       <div className="h-screen w-full bg-white dark:bg-[#09090b] flex items-center justify-center transition-colors">
@@ -459,10 +461,10 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
       : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300';
 
   return (
-    <div className="h-screen w-full bg-white dark:bg-[#09090b] flex overflow-hidden transition-colors duration-300 font-sans text-zinc-900 dark:text-zinc-100">
+    <div className="h-screen w-full bg-background flex overflow-hidden transition-colors duration-500 font-sans text-foreground">
 
       {/* Sidebar Desktop */}
-      <div className={`hidden md:flex flex-col transition-all duration-300 ${sidebarOpen ? 'w-[260px]' : 'w-[72px]'} overflow-hidden shrink-0 bg-zinc-50/50 dark:bg-[#0f1011] border-l border-zinc-200/50 dark:border-white/5`}>
+      <div className={`hidden md:flex flex-col transition-all duration-300 ${sidebarOpen ? 'w-[260px]' : 'w-[72px]'} overflow-hidden shrink-0 bg-white dark:bg-[#0f1011] border-l border-zinc-200 dark:border-white/5`}>
         <ChatSidebar
           conversations={conversations}
           activeId={activeId}
@@ -480,7 +482,7 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
       {/* Sidebar Mobile */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 flex flex-row-reverse md:hidden">
-          <div className="w-72 bg-white dark:bg-[#0f1011]">
+          <div className="w-72 bg-white dark:bg-[#0f1011] shadow-2xl">
             <ChatSidebar
               conversations={conversations}
               activeId={activeId}
@@ -616,8 +618,8 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
           )}
           {isEmpty ? (
             <div className="flex-1 flex flex-col items-center justify-center px-4 md:px-8 pb-20 animate-in fade-in duration-700">
-              <div className="w-16 h-16 rounded-3xl bg-zinc-50 dark:bg-white/[0.03] flex items-center justify-center mb-6 border border-zinc-100 dark:border-white/5 shadow-sm">
-                <Sparkles size={28} className="text-zinc-700 dark:text-zinc-300" />
+              <div className="w-16 h-16 rounded-3xl bg-white dark:bg-white/[0.03] flex items-center justify-center mb-6 border border-zinc-200 dark:border-white/5 shadow-premium">
+                <Sparkles size={28} className="text-indigo-600 dark:text-zinc-300" />
               </div>
               <h1 className="text-3xl md:text-4xl font-extrabold text-zinc-900 dark:text-white mb-3 tracking-tight text-center">
                 كيف يمكنني أن أساعدك؟
@@ -636,7 +638,7 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
                     key={i}
                     onClick={() => handleSend(chip.text)}
                     disabled={!canUseChat}
-                    className="flex items-center gap-3 px-5 py-3 rounded-[20px] bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-white/5 shadow-sm hover:shadow-md dark:shadow-none hover:bg-zinc-50 dark:hover:bg-white/[0.04] transition-all hover:-translate-y-0.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-white/10 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                    className="flex items-center gap-3 px-5 py-3 rounded-[20px] bg-white dark:bg-[#121214] border border-zinc-200 dark:border-white/10 shadow-premium hover:shadow-md dark:shadow-none hover:bg-zinc-50 dark:hover:bg-white/[0.04] transition-all hover:-translate-y-0.5 text-sm font-medium text-zinc-900 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-200 dark:focus:ring-white/10 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                   >
                     <span className="text-xl shrink-0">{chip.icon}</span>
                     <span className="text-right">{chip.text}</span>
@@ -664,7 +666,7 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
             <div className={`relative bg-white dark:bg-[#121214] border rounded-[24px] transition-all duration-300 ${
               isStreaming 
                 ? 'border-zinc-200 dark:border-white/10 shadow-sm' 
-                : 'border-zinc-200/60 dark:border-white/5 focus-within:border-zinc-300 dark:focus-within:border-white/15 focus-within:shadow-md focus-within:bg-white dark:focus-within:bg-[#161618] shadow-sm'
+                : 'border-zinc-200 dark:border-white/10 focus-within:border-indigo-500/50 dark:focus-within:border-white/15 focus-within:shadow-premium focus-within:bg-white dark:focus-within:bg-[#161618] shadow-premium'
             }`} dir="rtl">
               <textarea
                 dir="auto"
