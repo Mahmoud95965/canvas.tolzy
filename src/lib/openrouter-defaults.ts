@@ -15,7 +15,7 @@ function openRouterHeaders(apiKey: string): Record<string, string> {
     Authorization: `Bearer ${apiKey}`,
     'Content-Type': 'application/json',
     'HTTP-Referer': 'https://tolzy.me',
-    'X-Title': 'Tolzy Flow',
+    'X-Title': 'TOLZY AI',
   };
 }
 

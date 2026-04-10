@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase-admin';
 import { supabaseAdmin } from '@/lib/supabase';
 import { planFromEntitlements, planFromPlanRow } from '@/lib/plan';
+import { getGeminiAttemptsToday, GEMINI_FREE_LIMIT } from '@/lib/gemini-quota';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,13 +89,15 @@ export async function GET(req: NextRequest) {
     const planRow = await findPlanRow(auth);
     if (planRow) {
       const plan = planFromPlanRow(planRow);
-      return NextResponse.json({ entitlements: [], plan, source: 'plan' });
+      const attemptsUsed = await getGeminiAttemptsToday(auth.uid);
+      return NextResponse.json({ entitlements: [], plan, source: 'plan', usage: { used: attemptsUsed, limit: GEMINI_FREE_LIMIT } });
     }
 
     const limitsRow = await findUserLimitsRow(auth);
     if (limitsRow) {
       const plan = planFromPlanRow(limitsRow);
-      return NextResponse.json({ entitlements: [], plan, source: 'user_limits' });
+      const attemptsUsed = await getGeminiAttemptsToday(auth.uid);
+      return NextResponse.json({ entitlements: [], plan, source: 'user_limits', usage: { used: attemptsUsed, limit: GEMINI_FREE_LIMIT } });
     }
 
     const { data, error } = await supabaseAdmin
@@ -111,7 +114,19 @@ export async function GET(req: NextRequest) {
     }
     const entitlements = data || [];
     const plan = planFromEntitlements(entitlements);
-    return NextResponse.json({ entitlements, plan });
+
+    // Get usage statistics for the user
+    const attemptsUsed = await getGeminiAttemptsToday(auth.uid);
+    const attemptsLimit = GEMINI_FREE_LIMIT;
+
+    return NextResponse.json({ 
+      entitlements, 
+      plan,
+      usage: {
+        used: attemptsUsed,
+        limit: attemptsLimit
+      }
+    });
   } catch (error: any) {
     console.error('Entitlements error:', error);
     return NextResponse.json({ error: 'Failed to fetch entitlements' }, { status: 500 });

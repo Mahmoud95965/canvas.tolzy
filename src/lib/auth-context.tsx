@@ -19,6 +19,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   getIdToken: () => Promise<string | null>;
   refreshPlan: () => Promise<void>;
+  usageCount: number;
+  usageLimit: number;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -30,6 +32,8 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
   getIdToken: async () => null,
   refreshPlan: async () => {},
+  usageCount: 0,
+  usageLimit: 10,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -37,6 +41,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState<NormalizedPlan>('free');
   const [planLoading, setPlanLoading] = useState(true);
+  const [usageCount, setUsageCount] = useState(0);
+  const [usageLimit, setUsageLimit] = useState(10);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -89,6 +95,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const payload = await response.json();
+      
+      // Update usage if provided
+      if (payload?.usage) {
+        setUsageCount(payload.usage.used || 0);
+        setUsageLimit(payload.usage.limit || 10);
+      }
+
       if (payload?.plan) {
         setPlan(normalizePlan(payload.plan));
         return;
@@ -109,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, plan, planLoading, signInWithGoogle, signOut, getIdToken, refreshPlan }}
+      value={{ user, loading, plan, planLoading, signInWithGoogle, signOut, getIdToken, refreshPlan, usageCount, usageLimit }}
     >
       {children}
     </AuthContext.Provider>

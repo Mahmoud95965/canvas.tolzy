@@ -18,13 +18,23 @@ import {
   CheckCircle2,
   ChevronRight,
   Terminal,
-  Cpu
+  Cpu,
+  LogOut,
+  Settings,
+  Moon,
+  Sun,
+  Monitor,
+  ChevronDown,
+  Check
 } from 'lucide-react';
+import { useTheme } from '@/lib/theme-context';
 
 export default function LandingPage() {
-  const { user, plan } = useAuth();
+  const { user, plan, signOut, usageCount, usageLimit } = useAuth();
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
   const [heroPrompt, setHeroPrompt] = useState('');
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const heroState = useMemo(() => {
     if (!user) {
@@ -48,7 +58,7 @@ export default function LandingPage() {
       router.push('/login');
       return;
     }
-    window.location.href = `https://ai.tolzy.me?prompt=${encodeURIComponent(text)}`;
+    router.push(`/app?prompt=${encodeURIComponent(text)}`);
   };
 
   return (
@@ -87,20 +97,112 @@ export default function LandingPage() {
         </Link>
         
         <div className="flex items-center gap-6">
-          {!user && (
-            <Link 
-              href="/login" 
-              className="text-sm font-bold text-zinc-400 hover:text-white transition-colors hidden md:block"
-            >
-              تسجيل الدخول
-            </Link>
+          {!user ? (
+            <>
+              <Link 
+                href="/login" 
+                className="text-sm font-bold text-zinc-400 hover:text-white transition-colors hidden md:block"
+              >
+                تسجيل الدخول
+              </Link>
+              <Link 
+                href="/login" 
+                className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-black bg-white px-6 py-3 rounded-2xl hover:bg-zinc-200 hover:scale-105 active:scale-95 transition-all shadow-xl"
+              >
+                ابدأ الآن <ArrowLeft size={16} />
+              </Link>
+            </>
+          ) : (
+            <div className="relative">
+              <button 
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="group relative flex items-center gap-2 p-1 pr-1.5 rounded-full hover:bg-white/5 transition-colors border border-white/10"
+              >
+                <img
+                  src={user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`}
+                  className="w-8 h-8 rounded-full border border-white/20 shrink-0 object-cover bg-zinc-800 ring-2 ring-indigo-500/30"
+                  alt="Avatar"
+                />
+                <ChevronDown size={14} className="text-zinc-400 group-hover:text-white transition-colors" />
+              </button>
+
+              <AnimatePresence>
+                {profileOpen && (
+                  <>
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 z-40 bg-transparent" 
+                      onClick={() => setProfileOpen(false)} 
+                    />
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      className="absolute top-full left-0 mt-4 w-64 bg-[#121214] border border-white/10 rounded-3xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl" 
+                      dir="rtl"
+                    >
+                      <div className="px-5 py-4 border-b border-white/5 bg-white/[0.02]">
+                        <p className="text-sm font-bold text-white truncate">{user.displayName || 'مستخدم TOLZY AI'}</p>
+                        <p className="text-[10px] text-zinc-500 truncate mt-0.5 tracking-wider" dir="ltr">{user.email}</p>
+                        <div className="mt-3">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tight ${plan === 'pro' ? 'bg-amber-500/20 text-amber-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
+                            {plan === 'pro' ? 'TOLZY PRO' : 'خطة فري'}
+                          </span>
+                        </div>
+                        {plan === 'free' && (
+                           <div className="mt-4 bg-white/5 rounded-2xl p-3 border border-white/5">
+                              <div className="flex justify-between items-center mb-2">
+                                 <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.1em]">الاستخدام اليومي</span>
+                                 <span className="text-[10px] font-black text-indigo-400">{usageCount} / {usageLimit}</span>
+                              </div>
+                              <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                                 <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${Math.min(100, (usageCount / usageLimit) * 100)}%` }}
+                                    className="h-full bg-gradient-to-r from-indigo-500 to-violet-500" 
+                                 />
+                              </div>
+                              <p className="text-[8px] text-zinc-600 mt-2 font-bold leading-tight uppercase tracking-tighter">يتم تصفير العداد كل 24 ساعة بمشيئة الله.</p>
+                           </div>
+                        )}
+                      </div>
+                      
+                      <div className="p-2 flex flex-col gap-1">
+                        <button onClick={() => setTheme('light')} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-colors ${theme === 'light' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:bg-white/5 hover:text-white'}`}>
+                          <div className="flex items-center gap-3 text-xs font-bold"><Sun size={14} /> وضع النهار</div>
+                          {theme === 'light' && <Check size={12} />}
+                        </button>
+                        <button onClick={() => setTheme('dark')} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-colors ${theme === 'dark' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:bg-white/5 hover:text-white'}`}>
+                          <div className="flex items-center gap-3 text-xs font-bold"><Moon size={14} /> الوضع الليلي</div>
+                          {theme === 'dark' && <Check size={12} />}
+                        </button>
+                      </div>
+
+                      <div className="border-t border-white/5 p-2 flex flex-col gap-1">
+                        <Link href="/app" className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-zinc-400 hover:bg-white/5 hover:text-white rounded-xl transition-colors">
+                          <MessageSquare size={14} /> بد الدردشة
+                        </Link>
+                        {plan === 'free' ? (
+                          <button onClick={() => router.push('/pricing')} className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-indigo-400 hover:bg-indigo-500/10 rounded-xl transition-colors">
+                            <Sparkles size={14} /> ترقية إلى Pro
+                          </button>
+                        ) : (
+                          <button onClick={() => router.push('/pricing')} className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-zinc-400 hover:bg-white/5 hover:text-white rounded-xl transition-colors">
+                            <Sparkles size={14} /> الخطط والأسعار
+                          </button>
+                        )}
+                        <button onClick={signOut} className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">
+                          <LogOut size={14} /> تسجيل الخروج
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
           )}
-          <Link 
-            href={user ? '/dashboard' : '/login'} 
-            className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-black bg-white px-6 py-3 rounded-2xl hover:bg-zinc-200 hover:scale-105 active:scale-95 transition-all shadow-xl"
-          >
-            {user ? 'لوحة التحكم' : 'ابدأ الآن'} <ArrowLeft size={16} />
-          </Link>
         </div>
       </nav>
 
@@ -314,30 +416,6 @@ export default function LandingPage() {
             
             <p className="text-[10px] text-zinc-600 uppercase tracking-widest font-black">
                &copy; 2026 TOLZY AI. جميع الحقوق محفوظة لـ TOLZY الفريق المالك.
-            </p>
-         </div>
-      </footer>
-    </div>
-  );
-}
-e z-10">
-         <div className="flex flex-col md:flex-row justify-between items-center gap-8 max-w-7xl mx-auto">
-            <div className="flex items-center gap-3">
-               <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-white/10 flex items-center justify-center">
-                  <Layers size={14} />
-               </div>
-               <span className="font-bold text-lg tracking-tight">HEX AI</span>
-            </div>
-            
-            <div className="flex gap-8 text-xs font-bold text-zinc-500 uppercase tracking-widest">
-               <Link href="/pricing" className="hover:text-white transition-colors">الأسعار</Link>
-               <Link href="/login" className="hover:text-white transition-colors">الدخول</Link>
-               <Link href="/terms" className="hover:text-white transition-colors">الشروط</Link>
-               <Link href="/privacy" className="hover:text-white transition-colors">الخصوصية</Link>
-            </div>
-            
-            <p className="text-[10px] text-zinc-600 uppercase tracking-widest font-black">
-               &copy; 2026 HEX AI. جميع الحقوق محفوظة لـ TOLZY الفريق المالك.
             </p>
          </div>
       </footer>

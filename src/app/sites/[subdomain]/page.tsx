@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: site.meta_title || site.name,
-    description: site.meta_description || `${site.name} — Built with Tolzy Flow`,
+    description: site.meta_description || `${site.name} — Built with TOLZY AI`,
   };
 }
 

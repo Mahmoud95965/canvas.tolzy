@@ -18,28 +18,28 @@ export default function PricingPage() {
       priceLabel: 'مجاني',
       serviceKey: null,
       description:
-        'ابدأ مع Tolzy مجاناً واستكشف المزايا الأساسية. الميزات المتقدمة مثل المُفكّر والـ Reasoning المتقدم متاحة في Pro.',
+        'ابدأ مع TOLZY AI مجاناً واستكشف المزايا الأساسية للإجابة والبرمجة.',
       features: [
-        'وصول أساسي إلى Tolzy Copilot.',
-        'استخدام النماذج السريعة للمهام اليومية.',
+        '10 طلبات يومياً مجاناً.',
+        'وصول أساسي إلى TOLZY AI.',
+        'خبير في الإجابة والبرمجة.',
         'ميزات Pro المتقدمة مغلقة حتى الترقية.',
       ],
       cta: plan === 'free' ? 'الخطة الحالية' : 'بدء مجاني',
     },
     {
-      title: 'Tolzy Pro',
-      subtitle: 'شريكك الذكي في النجاح 🚀',
+      title: 'TOLZY Pro',
+      subtitle: 'القوة الكاملة بين يديك 🚀',
       priceLabel: '299 ج.م / شهرياً',
       serviceKey: PRO_SERVICE_KEY,
       description:
         'خطة احترافية للإنجاز السريع مع أداء أعلى وتجربة متقدمة بدون تعقيد.',
       features: [
+        'وصول غير محدود (حتى 5000 طلب شهرياً)',
         'عقل "المفكر": Reasoning متقدم',
-        'حرية بلا قيود بعدد طلبات كبير',
-        'أولوية وسرعة أعلى',
-        'اقتراح أدوات جديدة للمشتركين',
-        'وصول تلقائي لمنصة TOLZY AI عند الإطلاق',
-        'دعم VIP',
+        'أولوية وسرعة معالجة قصوى',
+        'دخول حصري لمنصة TOLZY Hex القادمة',
+        'دعم فني VIP مباشر',
       ],
       cta: plan === 'pro' ? 'خطتك الحالية' : 'اشترك الآن',
     },
@@ -104,7 +104,7 @@ export default function PricingPage() {
               <X className="h-5 w-5" />
             </button>
 
-            <h2 className="text-xl md:text-2xl font-bold mb-4">تفعيل اشتراك Tolzy Pro</h2>
+            <h2 className="text-xl md:text-2xl font-bold mb-4">تفعيل اشتراك TOLZY Pro</h2>
 
             <div className="rounded-xl border border-orange-200/70 bg-orange-100/90 text-orange-900 p-4 flex items-start gap-3 mb-4">
               <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
@@ -152,7 +152,7 @@ export default function PricingPage() {
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">الخطط والأسعار</h1>
-          <p className="text-gray-600 dark:text-white/70">اختر الخطة المناسبة وابدأ رحلتك مع Tolzy.</p>
+          <p className="text-gray-600 dark:text-white/70">اختر الخطة المناسبة وابدأ رحلتك مع TOLZY AI.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">

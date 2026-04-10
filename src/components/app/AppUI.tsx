@@ -3,7 +3,7 @@
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { ArrowUp, Mic, PanelLeft, Sparkles, Layers, X, Settings, LogOut, Monitor, Moon, Sun, ChevronDown, Check } from 'lucide-react';
+import { ArrowUp, Mic, PanelLeft, Sparkles, Cpu, X, Settings, LogOut, Monitor, Moon, Sun, ChevronDown, Check } from 'lucide-react';
 import ChatMessage, { ChatMessageData } from '@/components/chat/ChatMessage';
 import ChatSidebar, { Conversation } from '@/components/chat/ChatSidebar';
 import { useTheme } from '@/lib/theme-context';
@@ -54,7 +54,7 @@ declare global {
 }
 
 export default function AppUI({ initialChatId }: { initialChatId: string | null }) {
-  const { user, loading, signOut, getIdToken, plan, refreshPlan } = useAuth();
+  const { user, loading, signOut, getIdToken, plan, refreshPlan, usageCount, usageLimit } = useAuth();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
 
@@ -109,6 +109,19 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
       textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 160) + 'px';
     }
   }, [input]);
+  
+  // Auto-submit prompt from URL
+  useEffect(() => {
+    if (user && !loading && !isStreaming) {
+      const params = new URLSearchParams(window.location.search);
+      const p = params.get('prompt');
+      if (p) {
+        // Clear param so it doesn't resend on refresh
+        window.history.replaceState(null, '', window.location.pathname);
+        handleSend(p);
+      }
+    }
+  }, [user, loading, isStreaming, handleSend]);
 
   useEffect(() => {
     if (LOCK_PREMIUM_MODELS_DURING_LAUNCH && selectedModel === 'pro') {
@@ -496,10 +509,10 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
             </button>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 dark:from-white dark:to-zinc-200 flex items-center justify-center shadow-sm">
-                <Layers size={16} className="text-white dark:text-zinc-900" />
+                <Cpu size={16} className="text-white dark:text-zinc-900" />
               </div>
               <span className="font-extrabold text-base tracking-tight hidden sm:block bg-clip-text text-transparent bg-gradient-to-r from-zinc-800 to-zinc-600 dark:from-white dark:to-zinc-400">
-                Tolzy
+                TOLZY AI
               </span>
             </div>
           </div>
@@ -527,13 +540,28 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
                 <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
                 <div className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-[#1a1a1c] border border-zinc-200/60 dark:border-white/10 rounded-[20px] shadow-xl z-50 overflow-hidden outline-none animate-in fade-in slide-in-from-top-2" dir="rtl">
                   <div className="px-4 py-3.5 border-b border-zinc-100 dark:border-white/5 bg-zinc-50/50 dark:bg-white/[0.02]">
-                    <p className="text-[14px] font-bold text-zinc-900 dark:text-white truncate">{user.displayName || 'مستخدم تولزي'}</p>
+                    <p className="text-[14px] font-bold text-zinc-900 dark:text-white truncate">{user.displayName || 'مستخدم TOLZY AI'}</p>
                     <p className="text-[12px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5" dir="ltr">{user.email}</p>
                     <div className="mt-2">
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-bold ${planPillClass}`}>
                         الخطة الحالية: {planTextLabel}
                       </span>
                     </div>
+                    {plan === 'free' && (
+                       <div className="mt-3 bg-zinc-100 dark:bg-white/5 rounded-xl p-2.5">
+                          <div className="flex justify-between items-center mb-1.5">
+                             <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">الاستخدام اليومي</span>
+                             <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400">{usageCount} / {usageLimit}</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                             <div 
+                                className="h-full bg-indigo-500 transition-all duration-500" 
+                                style={{ width: `${Math.min(100, (usageCount / usageLimit) * 100)}%` }}
+                             />
+                          </div>
+                          <p className="text-[9px] text-zinc-500 mt-2 leading-relaxed">المستخدمون في الخطة المجانية لديهم 10 طلبات يومياً فقط.</p>
+                       </div>
+                    )}
                   </div>
                   
                   <div className="p-1.5 flex flex-col gap-0.5">
@@ -662,8 +690,8 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
                   <div className="relative">
                     <button onClick={() => setModelOpen(!modelOpen)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-white/5 text-zinc-600 dark:text-zinc-400 transition-colors">
                       <span className="text-[13px] font-semibold">
-                        {selectedModel === 'flash' && 'Tolzy Flash'}
-                        {selectedModel === 'pro' && 'Tolzy Pro'}
+                        {selectedModel === 'flash' && 'TOLZY AI Flash'}
+                        {selectedModel === 'pro' && 'TOLZY AI Pro'}
                       </span>
                       <ChevronDown size={14} className="opacity-70" />
                     </button>
@@ -678,8 +706,8 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
 
                           <button onClick={() => { setSelectedModel('flash'); setModelOpen(false); }} className={`flex items-start justify-between p-2.5 rounded-[14px] transition-colors ${selectedModel === 'flash' ? 'bg-zinc-50 dark:bg-white/[0.06] text-zinc-900 dark:text-white' : 'hover:bg-zinc-50 dark:hover:bg-white/[0.04] text-zinc-600 dark:text-zinc-300'}`}>
                              <div className="flex flex-col text-right w-full">
-                                <span className="font-semibold text-[13px]">Tolzy Flash</span>
-                                <span className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">موديلات كلاسيكية سريعة للمهام اليومية.</span>
+                                <span className="font-semibold text-[13px]">TOLZY AI Flash</span>
+                                <span className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">موديلات ذكية سريعة للإجابة على تساؤلاتك.</span>
                              </div>
                              {selectedModel === 'flash' && (
                                <Check size={16} className="text-zinc-900 dark:text-white mt-0.5" />
@@ -707,12 +735,12 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
                           >
                              <div className="flex flex-col text-right w-full">
                                 <span className="font-semibold text-[13px] text-zinc-900 dark:text-white flex items-center gap-1.5">
-                                  Tolzy Pro{' '}
+                                  TOLZY AI Pro{' '}
                                   <span className="text-[9px] bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-sm font-bold">
                                     PRO
                                   </span>
                                 </span>
-                                <span className="text-[11px] text-zinc-500 mt-0.5">أعلى أداء ذكي لحل المسائل المعقدة والبرمجة.</span>
+                                <span className="text-[11px] text-zinc-500 mt-0.5">المُفكّر: أعلى أداء ذكي لحل أعتى المسائل البرمجية.</span>
                              </div>
                              {selectedModel === 'pro' && <Check size={16} className="text-zinc-900 dark:text-white mt-0.5" />}
                           </button>
@@ -722,8 +750,8 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
                           {plan === 'free' && (
                             <button onClick={() => router.push(PRICING_URL)} className="flex items-start justify-between p-2.5 rounded-[14px] hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors text-right cursor-pointer group">
                              <div className="flex flex-col text-right w-full">
-                                <span className="font-semibold text-[13px] text-zinc-900 dark:text-indigo-100">Tolzy AI Pro</span>
-                                <span className="text-[11px] text-zinc-500 dark:text-indigo-200/60 mt-0.5">احصل على وصول غير محدود.</span>
+                                <span className="font-semibold text-[13px] text-zinc-900 dark:text-indigo-100">TOLZY AI Pro</span>
+                                <span className="text-[11px] text-zinc-500 dark:text-indigo-200/60 mt-0.5">احصل على ذكاء غير محدود.</span>
                              </div>
                              <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 mt-0.5 whitespace-nowrap bg-indigo-100 dark:bg-indigo-500/20 px-2 py-0.5 rounded-full group-hover:bg-indigo-200 dark:group-hover:bg-indigo-500/30 transition-colors">ترقية</span>
                             </button>
@@ -780,7 +808,7 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
             </div>
 
             <p className="text-center text-[12px] text-zinc-400 dark:text-zinc-500 mt-4 font-medium transition-colors">
-              تولزي هو أداة ذكية، يرجى مراجعة إجاباته والتأكد من صحتها.
+              TOLZY AI هو معلمك ورفيقك الذكي، يرجى مراجعة إجاباته البرمجية.
             </p>
           </div>
         </div>
