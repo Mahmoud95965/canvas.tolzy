@@ -59,7 +59,22 @@ function signTokenPayload(payloadEncoded: string): string {
 export function authenticateProject(projectKey?: string | null, projectSecret?: string | null): IntegrationProject | null {
   if (!projectKey || !projectSecret) return null;
   const projects = getProjectsFromEnv();
-  return projects.find((project) => project.key === projectKey && project.secret === projectSecret) || null;
+  
+  // Use timing-safe comparison to prevent timing attacks
+  for (const project of projects) {
+    const keyMatch = crypto.timingSafeEqual(
+      Buffer.from(projectKey),
+      Buffer.from(project.key)
+    );
+    const secretMatch = crypto.timingSafeEqual(
+      Buffer.from(projectSecret),
+      Buffer.from(project.secret)
+    );
+    if (keyMatch && secretMatch) {
+      return project;
+    }
+  }
+  return null;
 }
 
 export function issueIntegrationToken(projectKey: string, ttlSeconds = DEFAULT_TTL_SECONDS): { token: string; expiresIn: number } {

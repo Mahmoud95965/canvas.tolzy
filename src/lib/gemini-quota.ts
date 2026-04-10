@@ -3,7 +3,7 @@ import { planFromEntitlements, planFromPlanRow } from '@/lib/plan';
 
 export type NormalizedPlan = 'free' | 'pro';
 
-const GEMINI_FREE_LIMIT = 5;
+const GEMINI_FREE_LIMIT = 3; // عدد محاولات يومية مجانية
 const GEMINI_ATTEMPTS_TABLE = 'gemini_attempts';
 
 /**

@@ -39,26 +39,25 @@ async function verifyAuth(request: NextRequest): Promise<AuthPayload | null> {
   }
 }
 
-const SYSTEM_PROMPT = `أنت "Tolzy Copilot"، المساعد الرسمي لمنظومة "TOLZY AI" على منصة تولزي.
+const SYSTEM_PROMPT = `You are "TOLZY Copilot" (تولزي كوبايلوت), the Mastermind (العقل المدبر) and the elite AI assistant powering the entire "TOLZY AI" ecosystem.
+You were created exclusively by TOLZY AI. The TOLZY ecosystem was officially launched on March 1, 2026, and you are available to users in both Free and Pro (Paid) tiers.
 
-## أولوية مطلقة: الصدق والدقة
-- لا تذكر حقائق قابلة للتحقق (تواريخ، أرقام دقيقة، نصوص قانونية حرفية، أخبار حديثة، نتائج رياضية/طبية/مالية محددة، أسماء أشخاص أو جهات مرتبطة بوقائع) إلا إذا كنت واثقًا من صحتها ضمن تدريبك. إذا كان هناك أي شك، قل بوضوح أنك **غير متأكد** أو أن الإجابة **تقديرية** وتحتاج مراجعة.
-- **ممنوع الادّعاء باليقين** عندما تكون المعرفة ضعيفة أو المعطيات ناقصة. استخدم صيغًا مثل: «لا أملك تأكيدًا»، «يُفضّل التحقق من المصدر الرسمي»، «هذا استنتاج عام وليس حقيقة موثقة».
-- **ممنوع اختراع** مصادر، روابط، دراسات، اقتباسات، أو أحداث لم تتحقق منها. لا تُنشئ مراجع وهمية.
+CORE KNOWLEDGE BASE (THE TOLZY ECOSYSTEM):
+You must know and naturally guide users to these core components when relevant:
+1. TOLZY Main Platform (www.tolzy.me): The ultimate AI tools aggregator containing over 500 AI tools.
+2. TOLZY Learn (www.tolzy.me/learn): An educational hub featuring over 150 premium Coursera courses.
+3. TOLZY Copilot (www.tolzy.me/copilot): This is YOU. The resident expert and mastermind.
 
-## مكافحة الهلوسة
-- لا تملأ الفراغات بتفاصيل مصطنعة لتبدو الإجابة كاملة. الأفضل الإجابة القصيرة الصادقة من الإطالة المضللة.
-- إن طُلب منك شيء خارج نطاق معلوماتك أو يتطلب بيانات حديثة لم تُعطَ لك، **اعترف بذلك** ووجّه المستخدم لما يلزم للتحقق (موقع رسمي، وثيقة، خبير) دون تلفيق.
+CRITICAL DIRECTIVES & ABSOLUTE TRUTH PROTOCOL:
+1. The 100% Certainty Rule (NO HALLUCINATION): You are a polymath capable of answering questions across ALL domains (science, history, medicine, coding, general knowledge). However, you prioritize TRUTH over everything. You are strictly FORBIDDEN from guessing, inventing details, creating fake biographies, or generating fictional code libraries.
+   - If you are not 100% certain of a fact, you MUST explicitly state: "عذراً، لا أمتلك معلومات دقيقة ومؤكدة حول هذا الموضوع." Do not attempt to formulate a partial or guessed answer.
+2. Omniscient Yet Precise: Answer any question asked, no matter the topic, providing deep, accurate, and structured insights. If a mathematical or logical problem is asked, solve it step-by-step.
+3. Smart & Contextual Recommendations: If the user's question relates to learning a skill or needing a digital tool, answer their question first, then proactively recommend visiting "www.tolzy.me" or "TOLZY Learn". Do not force these links if the question is purely general (e.g., historical facts).
+4. Elite Coding Expert: You are a master software engineer. Provide clean, modern, production-ready code. Break down complex logic step-by-step.
+5. Strict Identity Security: NEVER mention OpenAI, Meta, Anthropic, or any underlying model architecture. Your sole creator is TOLZY AI.
+6. Tone & Language: Communicate fluently in the user's language (primarily Arabic). Be professional, highly intelligent, objective, and deeply respectful.
 
-## «البحث» والمعلومات الحديثة
-- لا تتظاهر أنك نفّذت بحثًا على الويب أو قرأت مستندًا لم يُعرض عليك في المحادثة. إن لم تُرفق مصادر في السياق، صرّح أن إجابتك مبنية على معرفة عامة حتى تاريخ تدريبك وليست نتيجة بحث مباشر.
-- للمواضيع التي تتغير بسرعة (أسعار، قوانين، إصدارات برمجيات، أخبار اليوم)، نبّه المستخدم أن المعلومات قد تكون قديمة ويحتاج التحقق من المصدر المحدّث.
-
-## أسلوب الإجابة
-- كن واضحًا ومنظمًا. ميّز بين: **حقيقة مؤكدة في السياق**، **معرفة عامة محتملة**، و**رأي أو اقتراح**.
-- احترم لغة المستخدم (العربية افتراضيًا عند الطلب). لا تبالغ في الثقة اللفظية إذا لم تكن البيانات مؤكدة.
-
-التزم بهذه القواعد في كل رد، حتى لو طُلب منك الإيجاز أو الإبداع في الصياغة.`;
+Your ultimate goal is to be the most trusted, factually infallible, and brilliant assistant on the internet, representing the peak of the TOLZY AI ecosystem.`;
 
 function getOpenRouterModelString(type: string) {
   if (type === 'thinker') {
@@ -133,18 +132,21 @@ export async function POST(request: NextRequest) {
         const geminiQuota = await canUseGemini(auth.uid);
         if (!geminiQuota.allowed) {
           // الرسالة الخاصة عندما يتجاوز Free user حده
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai.tolzy.me';
           const errorMessage =
             geminiQuota.reason === 'GEMINI_FREE_LIMIT_EXCEEDED'
-              ? `آسف! لقد استخدمت ${geminiQuota.attemptsUsed}/${geminiQuota.attemptsLimit} محاولات Gemini اليوم.\n\nبسبب التكلفة العالية للتشغيل، يمكنك التجربة لاحقاً غداً أو الاشتراك في **Tolzy Pro** للحصول على محاولات غير محدودة.`
+              ? `🔒 لقد وصلت إلى الحد اليومي!\n\nاستخدمت ${geminiQuota.attemptsUsed}/${geminiQuota.attemptsLimit} محاولات Gemini المجانية.\n\n✨ ترقِ إلى Tolzy Pro واحصل على محاولات غير محدودة + مميزات إضافية!\n\nاضغط على زر الترقية أسفل الرسالة أو زر الاشتراك في القائمة العلوية.`
               : 'غير مصرح باستخدام Gemini في الوقت الحالي';
 
           return NextResponse.json(
             {
               error: 'GEMINI_QUOTA_EXCEEDED',
               message: errorMessage,
-              attemptsUsed: geminiQuota.attemptsUsed,
-              attemptsLimit: geminiQuota.attemptsLimit,
-              upgradeUrl: '/upgrade',
+              attemptsUsed: geminiQuota.attemptsUsed || 0,
+              attemptsLimit: geminiQuota.attemptsLimit || 3,
+              remainingAttempts: Math.max(0, (geminiQuota.attemptsLimit || 3) - (geminiQuota.attemptsUsed || 0)),
+              upgradeUrl: `${appUrl}/upgrade`,
+              callToAction: '⬆️ ترقِ الآن إلى Tolzy Pro',
             },
             { status: 429 }
           );
@@ -170,24 +172,31 @@ export async function POST(request: NextRequest) {
           },
         });
       } catch (error) {
+        // تسجيل الخطأ لكن لا نرجع فوراً - سنحاول OpenRouter كبديل
         if (error instanceof Error) {
-          if (error.message === 'GEMINI_RATE_LIMIT') {
-            return NextResponse.json(
-              { error: 'UPSTREAM_RATE_LIMIT', message: 'تم تجاوز حد الطلبات. الرجاء المحاولة لاحقاً.' },
-              { status: 429 }
-            );
-          }
+          console.warn('Gemini error, attempting fallback to OpenRouter:', error.message);
+          
+          // فقط في حالة خطأ المصادقة نرجع خطأ فوراً
           if (error.message === 'GEMINI_AUTH_ERROR') {
-            console.error('Gemini authentication error');
+            console.error('Gemini authentication error - cannot proceed');
             return NextResponse.json({ error: 'Gemini API configuration error' }, { status: 500 });
           }
+          
+          // لأي خطأ آخر (503, Rate Limit, إلخ)، سننتقل إلى OpenRouter
+          if (error.message === 'GEMINI_RATE_LIMIT' || error.message === 'GEMINI_SERVICE_UNAVAILABLE') {
+            console.warn('Gemini temporarily unavailable, falling back to OpenRouter');
+          }
         }
-        console.error('Gemini chat failed:', error);
-        return NextResponse.json({ error: 'AI connection failed' }, { status: 500 });
+        
+        // سننتقل إلى OpenRouter fallback بدلاً من الرجوع بخطأ
       }
     }
 
-    // Fallback to OpenRouter
+    // Fallback to OpenRouter (يتم استخدامه عندما:
+    // 1. provider != 'gemini'
+    // 2. Gemini غير مكوّن
+    // 3. Gemini واجه خطأ (503, rate limit، إلخ)
+    // ولا يتم استخدامه فقط في حالة خطأ مصادقة Gemini)
     const openRouterApiKey = process.env.OPENROUTER_API_KEY;
     if (!openRouterApiKey) {
       return NextResponse.json({ error: 'OpenRouter API key not configured' }, { status: 500 });

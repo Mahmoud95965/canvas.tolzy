@@ -1,6 +1,11 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const client = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
+const apiKey = process.env.GOOGLE_API_KEY || '';
+const client = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+
+export function isGeminiConfigured(): boolean {
+  return !!apiKey && apiKey.length > 0;
+}
 
 export interface GeminiMessage {
   role: 'user' | 'assistant';
@@ -22,6 +27,10 @@ export interface GeminiChatOptions {
 export async function geminiChatWithGrounding(
   options: GeminiChatOptions
 ): Promise<{ text: string; searchUsed?: boolean; citations?: string[] }> {
+  if (!client || !isGeminiConfigured()) {
+    throw new Error('GEMINI_NOT_CONFIGURED');
+  }
+
   const {
     messages,
     systemPrompt,
@@ -91,10 +100,15 @@ export async function geminiChatWithGrounding(
       citations,
     };
   } catch (error) {
+    // Detect different error types for better fallback handling
     if (error instanceof Error) {
-      // Check for rate limiting
+      // Check for rate limiting and service unavailable errors
       if (error.message.includes('429') || error.message.includes('RESOURCE_EXHAUSTED')) {
         throw new Error('GEMINI_RATE_LIMIT');
+      }
+      if (error.message.includes('503') || error.message.includes('Service Unavailable')) {
+        // Treat service unavailable as rate limit for fallback purposes
+        throw new Error('GEMINI_SERVICE_UNAVAILABLE');
       }
       if (error.message.includes('API_KEY') || error.message.includes('authentication')) {
         throw new Error('GEMINI_AUTH_ERROR');
@@ -112,6 +126,10 @@ export async function geminiSingleRequest(
   systemPrompt: string,
   enableSearchGrounding = true
 ): Promise<string> {
+  if (!client || !isGeminiConfigured()) {
+    throw new Error('GEMINI_NOT_CONFIGURED');
+  }
+
   try {
     const model = client.getGenerativeModel({
       model: 'gemini-2.5-flash',
@@ -156,14 +174,11 @@ export async function geminiSingleRequest(
       if (error.message.includes('429') || error.message.includes('RESOURCE_EXHAUSTED')) {
         throw new Error('GEMINI_RATE_LIMIT');
       }
+      if (error.message.includes('503') || error.message.includes('Service Unavailable')) {
+        throw new Error('GEMINI_SERVICE_UNAVAILABLE');
+      }
     }
     throw error;
   }
 }
 
-/**
- * Check if Google API key is configured
- */
-export function isGeminiConfigured(): boolean {
-  return !!process.env.GOOGLE_API_KEY;
-}
