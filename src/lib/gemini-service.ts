@@ -54,7 +54,7 @@ export async function geminiChatWithGrounding(
   try {
     // Initialize model with Gemini 2.5 Flash (latest & fastest)
     const model = client.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-1.5-flash-latest',
       systemInstruction: systemPrompt,
     });
 
@@ -65,12 +65,12 @@ export async function geminiChatWithGrounding(
 
     // Build request options with optional search grounding
     interface SendMessageOptions {
-      tools?: Array<{ googleSearch: Record<string, never> }>;
+      tools?: Array<{ googleSearchRetrieval: Record<string, never> }>;
     }
 
     const sendOptions: SendMessageOptions = {};
     if (enableSearchGrounding) {
-      sendOptions.tools = [{ googleSearch: {} }];
+      sendOptions.tools = [{ googleSearchRetrieval: {} }];
     }
 
     // Send message
@@ -132,7 +132,7 @@ export async function geminiSingleRequest(
 
   try {
     const model = client.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-1.5-flash-latest',
       systemInstruction: systemPrompt,
     });
 
@@ -141,7 +141,7 @@ export async function geminiSingleRequest(
         maxOutputTokens?: number;
         temperature?: number;
       };
-      tools?: Array<{ googleSearch: Record<string, never> }>;
+      tools?: Array<{ googleSearchRetrieval: Record<string, never> }>;
     }
 
     const options: GenerateContentOptions = {
@@ -152,7 +152,7 @@ export async function geminiSingleRequest(
     };
 
     if (enableSearchGrounding) {
-      options.tools = [{ googleSearch: {} }];
+      options.tools = [{ googleSearchRetrieval: {} }];
     }
 
     const response = await model.generateContent(prompt, options as any);

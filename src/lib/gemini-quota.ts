@@ -7,37 +7,54 @@ const GEMINI_FREE_LIMIT = 3; // عدد محاولات يومية مجانية
 const GEMINI_ATTEMPTS_TABLE = 'gemini_attempts';
 
 /**
- * الحصول على خطة المستخدم من Supabase
+ * الحصول على خطة المستخدم من Supabase بشكل موثوق
  */
-export async function getUserPlan(uid: string): Promise<NormalizedPlan> {
+export async function getUserPlan(uid: string, email?: string | null): Promise<NormalizedPlan> {
   try {
-    // محاولة الحصول على صف الخطة من جداول محتملة
-    const tableCandidates = ['user_plans', 'plans', 'subscriptions', 'entitlements'];
+    // 1. القائمة الكاملة للجداول المحتملة
+    const tableCandidates = ['user_plans', 'plans', 'plan', 'user_limits', 'service_entitlements'];
+    
+    // 2. القائمة الكاملة للأعمدة المحتملة للبحث
+    const columns = ['user_id', 'uid', 'userId'];
+    const emailColumns = ['email', 'user_email', 'email_address', 'mail'];
 
     for (const table of tableCandidates) {
       try {
-        const { data, error } = await supabaseAdmin
-          .from(table)
-          .select('*')
-          .eq('user_id', uid)
-          .or(`uid.eq.${uid}`)
+        // بناء جملة الاستعلام لكل جدول
+        let query = supabaseAdmin.from(table).select('*');
+        
+        // بناء شروط البحث (UID)
+        const uidConditions = columns.map(col => `${col}.eq.${uid}`).join(',');
+        
+        // إذا كان الإيميل متوفر، نضيفه لشروط البحث
+        let finalFilter = uidConditions;
+        if (email) {
+          const emailConditions = emailColumns.map(col => `${col}.eq.${email}`).join(',');
+          finalFilter = `${uidConditions},${emailConditions}`;
+        }
+
+        const { data, error } = await query
+          .or(finalFilter)
           .order('updated_at', { ascending: false })
           .limit(1);
 
         if (!error && Array.isArray(data) && data.length > 0) {
-          // تحقق إذا كانت دالة planFromEntitlements صالحة (للجداول التي تحتوي على entitlements)
-          if (Array.isArray(data[0]?.entitlements)) {
-            return planFromEntitlements(data[0].entitlements);
+          const row = data[0];
+          
+          // إذا وجدنا استحقاقات مباشرة (لجدول service_entitlements)
+          if (table === 'service_entitlements' || Array.isArray(row?.entitlements)) {
+            const ents = Array.isArray(row?.entitlements) ? row.entitlements : data;
+            return planFromEntitlements(ents);
           }
-          // وإلا استخدم planFromPlanRow
-          return planFromPlanRow(data[0]);
+          
+          // وإلا استخدم دالة التحقق العادية
+          return planFromPlanRow(row);
         }
-      } catch {
-        // تابع للجدول التالي
+      } catch (err) {
+        // تابع للجدول التالي في حالة تعثر جدول معين
       }
     }
 
-    // القيمة الافتراضية: free
     return 'free';
   } catch (error) {
     console.error('Error getting user plan:', error);

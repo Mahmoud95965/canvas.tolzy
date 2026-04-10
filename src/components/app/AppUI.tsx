@@ -67,7 +67,7 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
 
   const [profileOpen, setProfileOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<'flash' | 'thinker' | 'pro'>('flash');
+  const [selectedModel, setSelectedModel] = useState<'flash' | 'pro'>('flash');
   const [isListening, setIsListening] = useState(false);
   const [supportsSpeech, setSupportsSpeech] = useState(false);
   const isProUser = plan === 'pro';
@@ -111,7 +111,7 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
   }, [input]);
 
   useEffect(() => {
-    if (LOCK_PREMIUM_MODELS_DURING_LAUNCH && (selectedModel === 'thinker' || selectedModel === 'pro')) {
+    if (LOCK_PREMIUM_MODELS_DURING_LAUNCH && selectedModel === 'pro') {
       setSelectedModel('flash');
     }
   }, [selectedModel]);
@@ -663,7 +663,6 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
                     <button onClick={() => setModelOpen(!modelOpen)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-white/5 text-zinc-600 dark:text-zinc-400 transition-colors">
                       <span className="text-[13px] font-semibold">
                         {selectedModel === 'flash' && 'Tolzy Flash'}
-                        {selectedModel === 'thinker' && 'المُفكِّر'}
                         {selectedModel === 'pro' && 'Tolzy Pro'}
                       </span>
                       <ChevronDown size={14} className="opacity-70" />
@@ -680,42 +679,11 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
                           <button onClick={() => { setSelectedModel('flash'); setModelOpen(false); }} className={`flex items-start justify-between p-2.5 rounded-[14px] transition-colors ${selectedModel === 'flash' ? 'bg-zinc-50 dark:bg-white/[0.06] text-zinc-900 dark:text-white' : 'hover:bg-zinc-50 dark:hover:bg-white/[0.04] text-zinc-600 dark:text-zinc-300'}`}>
                              <div className="flex flex-col text-right w-full">
                                 <span className="font-semibold text-[13px]">Tolzy Flash</span>
-                                <span className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">سريع للأداء العام والمهام.</span>
+                                <span className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">موديلات كلاسيكية سريعة للمهام اليومية.</span>
                              </div>
                              {selectedModel === 'flash' && (
                                <Check size={16} className="text-zinc-900 dark:text-white mt-0.5" />
                              )}
-                          </button>
-                          
-                          <button
-                            onClick={() => {
-                              if (LOCK_PREMIUM_MODELS_DURING_LAUNCH) {
-                                setModelOpen(false);
-                              } else if (plan === 'pro') {
-                                setSelectedModel('thinker');
-                                setModelOpen(false);
-                              } else {
-                                router.push(PRICING_URL);
-                              }
-                            }}
-                            className={`flex items-start justify-between p-2.5 rounded-[14px] text-right transition-colors ${
-                              LOCK_PREMIUM_MODELS_DURING_LAUNCH
-                                ? 'opacity-60 cursor-not-allowed'
-                                : plan === 'pro'
-                                  ? 'hover:bg-zinc-50 dark:hover:bg-white/[0.04] text-zinc-600 dark:text-zinc-300'
-                                  : 'opacity-80 hover:bg-indigo-50 dark:hover:bg-indigo-500/10'
-                            }`}
-                          >
-                             <div className="flex flex-col text-right w-full">
-                                <span className="font-semibold text-[13px] text-zinc-900 dark:text-white flex items-center gap-1.5">
-                                  المُفكِّر{' '}
-                                  <span className="text-[9px] bg-zinc-200 dark:bg-zinc-700/70 px-1.5 py-0.5 rounded-sm">
-                                    {LOCK_PREMIUM_MODELS_DURING_LAUNCH ? 'قريباً' : 'Pro'}
-                                  </span>
-                                </span>
-                                <span className="text-[11px] text-zinc-500 mt-0.5">مخصص لحل المشاكل المعقدة.</span>
-                             </div>
-                             {selectedModel === 'thinker' && plan === 'pro' && !LOCK_PREMIUM_MODELS_DURING_LAUNCH && <Check size={16} className="text-zinc-900 dark:text-white mt-0.5" />}
                           </button>
 
                           <button
@@ -740,13 +708,13 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
                              <div className="flex flex-col text-right w-full">
                                 <span className="font-semibold text-[13px] text-zinc-900 dark:text-white flex items-center gap-1.5">
                                   Tolzy Pro{' '}
-                                  <span className="text-[9px] bg-zinc-200 dark:bg-zinc-700/70 px-1.5 py-0.5 rounded-sm">
-                                    {LOCK_PREMIUM_MODELS_DURING_LAUNCH ? 'قريباً' : 'Pro'}
+                                  <span className="text-[9px] bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-sm font-bold">
+                                    PRO
                                   </span>
                                 </span>
-                                <span className="text-[11px] text-zinc-500 mt-0.5">أعلى أداء برمجي ورياضي.</span>
+                                <span className="text-[11px] text-zinc-500 mt-0.5">أعلى أداء ذكي لحل المسائل المعقدة والبرمجة.</span>
                              </div>
-                             {selectedModel === 'pro' && plan === 'pro' && !LOCK_PREMIUM_MODELS_DURING_LAUNCH && <Check size={16} className="text-zinc-900 dark:text-white mt-0.5" />}
+                             {selectedModel === 'pro' && <Check size={16} className="text-zinc-900 dark:text-white mt-0.5" />}
                           </button>
 
                           <div className="h-px bg-zinc-100 dark:bg-white/5 my-1 mx-2" />

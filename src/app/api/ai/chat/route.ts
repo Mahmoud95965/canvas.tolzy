@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth } from '@/lib/firebase-admin';
+import { adminAuth, FIREBASE_INIT_ERROR } from '@/lib/firebase-admin';
 import dns from 'node:dns';
 import { LOCK_PREMIUM_MODELS_DURING_LAUNCH } from '@/lib/plan';
 import {
@@ -8,7 +8,7 @@ import {
   UPSTREAM_CONGESTION_USER_MESSAGE_AR,
 } from '@/lib/openrouter-defaults';
 import { geminiChatWithGrounding, isGeminiConfigured, type GeminiMessage } from '@/lib/gemini-service';
-import { canUseGemini, recordGeminiAttempt } from '@/lib/gemini-quota';
+import { getUserPlan, recordGeminiAttempt } from '@/lib/gemini-quota';
 
 if (typeof dns.setDefaultResultOrder === 'function') {
   dns.setDefaultResultOrder('ipv4first');
@@ -24,7 +24,7 @@ const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 30;
 const rateLimitStore = new Map<string, { count: number; windowStart: number }>();
 
-type AuthPayload = { uid: string };
+type AuthPayload = { uid: string; email?: string | null };
 
 async function verifyAuth(request: NextRequest): Promise<AuthPayload | null> {
   const authHeader = request.headers.get('Authorization');
@@ -32,8 +32,8 @@ async function verifyAuth(request: NextRequest): Promise<AuthPayload | null> {
   const token = authHeader.split('Bearer ')[1];
   try {
     if (!adminAuth) return null;
-    const decoded = await adminAuth.verifyIdToken(token);
-    return { uid: decoded.uid };
+    const decodedToken = await adminAuth.verifyIdToken(token);
+    return { uid: decodedToken.uid, email: decodedToken.email };
   } catch {
     return null;
   }
@@ -59,14 +59,19 @@ CRITICAL DIRECTIVES & ABSOLUTE TRUTH PROTOCOL:
 
 Your ultimate goal is to be the most trusted, factually infallible, and brilliant assistant on the internet, representing the peak of the TOLZY AI ecosystem.`;
 
-function getOpenRouterModelString(type: string) {
-  if (type === 'thinker') {
-    return process.env.OPENROUTER_THINKER_MODEL?.trim() || OPENROUTER_DEFAULT_MODEL;
-  }
+function getOpenRouterModelString(type: string, plan: string = 'free') {
+  // Free models (The "Old" models)
+  const defaultFreeModel = 'google/gemini-flash-1.5-exp:free';
+  
+  // Pro Model (The Premium Powerhouse)
+  const proModel = 'qwen/qwen3.5-flash-02-23';
+
   if (type === 'pro') {
-    return process.env.OPENROUTER_PRO_MODEL?.trim() || OPENROUTER_DEFAULT_MODEL;
+    // Only return the high-performance model if the plan is pro
+    return plan === 'pro' ? proModel : defaultFreeModel;
   }
-  return process.env.OPENROUTER_CHAT_MODEL?.trim() || OPENROUTER_DEFAULT_MODEL;
+
+  return process.env.OPENROUTER_CHAT_MODEL?.trim() || defaultFreeModel;
 }
 
 function checkRateLimit(uid: string): boolean {
@@ -110,9 +115,26 @@ function normalizeIncomingMessages(raw: unknown): Array<{ role: 'user' | 'assist
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('📨 Chat API Request received at', new Date().toISOString());
+
+    if (FIREBASE_INIT_ERROR) {
+      console.error('❌ Firebase Admin initialization error:', FIREBASE_INIT_ERROR);
+    }
+    
     const auth = await verifyAuth(request);
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!auth) {
+      console.error('❌ Authentication failed - no valid token');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    console.log('✅ User authenticated:', auth.uid);
+
+    // Get user plan to enforce restrictions
+    const userPlan = await getUserPlan(auth.uid, auth.email);
+    console.log(`👤 User plan for ${auth.uid}: ${userPlan}`);
+    
     if (!checkRateLimit(auth.uid)) {
+      console.warn('⚠️ Rate limit exceeded for user:', auth.uid);
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
@@ -121,76 +143,16 @@ export async function POST(request: NextRequest) {
     const messages = normalizeIncomingMessages(body?.messages);
     const useGemini = String(body?.provider ?? 'gemini').toLowerCase() === 'gemini';
 
-    if (LOCK_PREMIUM_MODELS_DURING_LAUNCH && (modelType === 'thinker' || modelType === 'pro')) {
+    if (LOCK_PREMIUM_MODELS_DURING_LAUNCH && modelType === 'pro') {
       return NextResponse.json({ error: 'PREMIUM_MODELS_TEMPORARILY_LOCKED' }, { status: 403 });
     }
 
-    // Route to Gemini if requested and configured
+    /* 
+    // Gemini routing is disabled as per user request to rely exclusively on OpenRouter
     if (useGemini && isGeminiConfigured()) {
-      try {
-        // ✅ التحقق من حد المحاولات للـ Free users
-        const geminiQuota = await canUseGemini(auth.uid);
-        if (!geminiQuota.allowed) {
-          // الرسالة الخاصة عندما يتجاوز Free user حده
-          const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai.tolzy.me';
-          const errorMessage =
-            geminiQuota.reason === 'GEMINI_FREE_LIMIT_EXCEEDED'
-              ? `🔒 لقد وصلت إلى الحد اليومي!\n\nاستخدمت ${geminiQuota.attemptsUsed}/${geminiQuota.attemptsLimit} محاولات Gemini المجانية.\n\n✨ ترقِ إلى Tolzy Pro واحصل على محاولات غير محدودة + مميزات إضافية!\n\nاضغط على زر الترقية أسفل الرسالة أو زر الاشتراك في القائمة العلوية.`
-              : 'غير مصرح باستخدام Gemini في الوقت الحالي';
-
-          return NextResponse.json(
-            {
-              error: 'GEMINI_QUOTA_EXCEEDED',
-              message: errorMessage,
-              attemptsUsed: geminiQuota.attemptsUsed || 0,
-              attemptsLimit: geminiQuota.attemptsLimit || 3,
-              remainingAttempts: Math.max(0, (geminiQuota.attemptsLimit || 3) - (geminiQuota.attemptsUsed || 0)),
-              upgradeUrl: `${appUrl}/upgrade`,
-              callToAction: '⬆️ ترقِ الآن إلى Tolzy Pro',
-            },
-            { status: 429 }
-          );
-        }
-
-        const geminiMessages: GeminiMessage[] = messages;
-        const result = await geminiChatWithGrounding({
-          messages: geminiMessages,
-          systemPrompt: SYSTEM_PROMPT,
-          enableSearchGrounding: true,
-          maxOutputTokens: MAX_OUTPUT_TOKENS,
-          temperature: 0.2,
-        });
-
-        // ✅ تسجيل المحاولة
-        await recordGeminiAttempt(auth.uid);
-
-        return new Response(result.text, {
-          headers: {
-            'Content-Type': 'text/plain; charset=utf-8',
-            'Cache-Control': 'no-cache, no-transform',
-            ...(result.citations ? { 'X-Search-Used': 'true', 'X-Citations': JSON.stringify(result.citations) } : {}),
-          },
-        });
-      } catch (error) {
-        // تسجيل الخطأ لكن لا نرجع فوراً - سنحاول OpenRouter كبديل
-        if (error instanceof Error) {
-          console.warn('Gemini error, attempting fallback to OpenRouter:', error.message);
-          
-          // فقط في حالة خطأ المصادقة نرجع خطأ فوراً
-          if (error.message === 'GEMINI_AUTH_ERROR') {
-            console.error('Gemini authentication error - cannot proceed');
-            return NextResponse.json({ error: 'Gemini API configuration error' }, { status: 500 });
-          }
-          
-          // لأي خطأ آخر (503, Rate Limit, إلخ)، سننتقل إلى OpenRouter
-          if (error.message === 'GEMINI_RATE_LIMIT' || error.message === 'GEMINI_SERVICE_UNAVAILABLE') {
-            console.warn('Gemini temporarily unavailable, falling back to OpenRouter');
-          }
-        }
-        
-        // سننتقل إلى OpenRouter fallback بدلاً من الرجوع بخطأ
-      }
+      // ... Gemini logic ...
     }
+    */
 
     // Fallback to OpenRouter (يتم استخدامه عندما:
     // 1. provider != 'gemini'
@@ -202,8 +164,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'OpenRouter API key not configured' }, { status: 500 });
     }
 
-    const effectiveModelType = 'flash';
-    const openRouterModel = getOpenRouterModelString(effectiveModelType);
+    if (modelType === 'pro' && userPlan !== 'pro') {
+      return NextResponse.json({ 
+        error: 'PRO_REQUIRED', 
+        message: 'موديل Pro متاح لمشتركي الخطط المدفوعة فقط. ارفع خطتك الآن للحصول على أفضل أداء.' 
+      }, { status: 403 });
+    }
+
+    const effectiveModelType = modelType === 'pro' ? 'pro' : 'flash';
+    const openRouterModel = getOpenRouterModelString(effectiveModelType, userPlan);
 
     const withSystem = [{ role: 'system', content: SYSTEM_PROMPT }, ...messages] as Array<{
       role: string;
@@ -212,6 +181,7 @@ export async function POST(request: NextRequest) {
 
     let text: string;
     try {
+      console.log(`📡 Calling OpenRouter with model: ${openRouterModel}`);
       text = await fetchOpenRouterChatCompletionText(
         openRouterApiKey,
         openRouterModel,
@@ -220,14 +190,44 @@ export async function POST(request: NextRequest) {
         0.2
       );
     } catch (error) {
-      if (error instanceof Error && error.message === 'OPENROUTER_RATE_LIMIT') {
-        return NextResponse.json(
-          { error: 'UPSTREAM_RATE_LIMIT', message: UPSTREAM_CONGESTION_USER_MESSAGE_AR },
-          { status: 429 }
-        );
+      const isCongested = error instanceof Error && 
+        (error.message === 'OPENROUTER_RATE_LIMIT' || error.message.includes('busy') || error.message.includes('congested'));
+
+      // ✅ Fallback if model is busy OR not found
+      if (isCongested || (error instanceof Error && error.message.includes('404'))) {
+        const reason = isCongested ? 'CONGESTED' : 'NOT_FOUND';
+        console.warn(`[OpenRouter] Primary model ${openRouterModel} is ${reason}. Falling back to default...`);
+        
+        try {
+          // Use a different model for fallback (ensure they are not the same)
+          const fallbackModel = openRouterModel === OPENROUTER_DEFAULT_MODEL 
+            ? 'google/gemini-2.0-flash-exp:free' 
+            : OPENROUTER_DEFAULT_MODEL;
+            
+          console.log(`📡 Attempting fallback with: ${fallbackModel}`);
+          text = await fetchOpenRouterChatCompletionText(
+            openRouterApiKey,
+            fallbackModel,
+            withSystem,
+            MAX_OUTPUT_TOKENS,
+            0.2
+          );
+        } catch (innerError) {
+          console.error('❌ OpenRouter all attempts failed:', innerError);
+          const finalMsg = innerError instanceof Error ? innerError.message : String(innerError);
+          
+          return new Response(`عذراً، جميع مسارات الذكاء الاصطناعي مزدحمة حالياً. يرجى المحاولة مرة أخرى خلال دقائق.\n(التفاصيل: ${finalMsg.slice(0, 100)})`, {
+            status: 200,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+          });
+        }
+      } else {
+        console.error('❌ OpenRouter critical failure:', error);
+        return new Response("عذراً، حدث خطأ غير متوقع أثناء الاتصال بالذكاء الاصناعي.", {
+          status: 200,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        });
       }
-      console.error('OpenRouter chat failed:', error);
-      return NextResponse.json({ error: 'AI connection failed' }, { status: 500 });
     }
 
     return new Response(text, {
@@ -237,10 +237,25 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error('Chat API Error:', error);
+    const errorDetails = error instanceof Error 
+      ? { message: error.message, stack: error.stack }
+      : String(error);
+    
+    console.error('❌ Chat API Error:', {
+      timestamp: new Date().toISOString(),
+      error: errorDetails,
+      errorType: error?.constructor?.name,
+    });
+    
     if (error instanceof Error && error.message === 'INVALID_MESSAGES') {
       return NextResponse.json({ error: 'Invalid request payload' }, { status: 400 });
     }
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    
+    // أرجع رسالة خطأ أكثر تفصيلاً
+    return NextResponse.json({ 
+      error: 'Internal Server Error',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString(),
+    }, { status: 500 });
   }
 }

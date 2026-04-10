@@ -3,7 +3,7 @@ export type NormalizedPlan = 'free' | 'pro';
 export const PRO_SERVICE_KEY = 'tolzy_pro';
 export const PRO_PRODUCT_ID = 'prod_UIsjwFebXdCN9Z';
 export const PRO_LAUNCH_GUARD = false;
-export const LOCK_PREMIUM_MODELS_DURING_LAUNCH = true;
+export const LOCK_PREMIUM_MODELS_DURING_LAUNCH = false;
 
 export function normalizePlan(value: unknown): NormalizedPlan {
   const raw = String(value ?? '').toLowerCase();

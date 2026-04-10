@@ -1,5 +1,5 @@
 /** Default when OPENROUTER_*_MODEL env vars are unset */
-export const OPENROUTER_DEFAULT_MODEL = 'google/gemma-4-31b-it:free';
+export const OPENROUTER_DEFAULT_MODEL = 'qwen/qwen3-30b-a3b-thinking-2507';
 
 /** Shown when upstream is rate-limited or overloaded after retries */
 export const UPSTREAM_CONGESTION_USER_MESSAGE_AR =
@@ -7,8 +7,8 @@ export const UPSTREAM_CONGESTION_USER_MESSAGE_AR =
 
 const OPENROUTER_COMPLETIONS_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-const RETRY_DELAYS_MS = [0, 1500, 3500, 7000];
-const MAX_ATTEMPTS = 4;
+const RETRY_DELAYS_MS = [0, 1000, 2500, 5000, 10000, 15000, 20000];
+const MAX_ATTEMPTS = 7;
 
 function openRouterHeaders(apiKey: string): Record<string, string> {
   return {
@@ -35,7 +35,11 @@ export function isOpenRouterRateLimited(httpStatus: number, bodyText: string): b
       m.includes('unavailable') ||
       m.includes('too many requests') ||
       m.includes('temporarily') ||
-      m.includes('try again')
+      m.includes('try again') ||
+      m.includes('busy') ||
+      m.includes('congested') ||
+      m.includes('provider error') ||
+      m.includes('upstream')
     ) {
       return true;
     }
