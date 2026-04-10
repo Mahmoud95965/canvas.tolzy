@@ -7,6 +7,8 @@ import {
   OPENROUTER_DEFAULT_MODEL,
   UPSTREAM_CONGESTION_USER_MESSAGE_AR,
 } from '@/lib/openrouter-defaults';
+import { geminiChatWithGrounding, isGeminiConfigured, type GeminiMessage } from '@/lib/gemini-service';
+import { canUseGemini, recordGeminiAttempt } from '@/lib/gemini-quota';
 
 if (typeof dns.setDefaultResultOrder === 'function') {
   dns.setDefaultResultOrder('ipv4first');
@@ -115,17 +117,82 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
+    const body = await request.json();
+    const modelType = String(body?.modelType ?? 'flash');
+    const messages = normalizeIncomingMessages(body?.messages);
+    const useGemini = String(body?.provider ?? 'gemini').toLowerCase() === 'gemini';
+
+    if (LOCK_PREMIUM_MODELS_DURING_LAUNCH && (modelType === 'thinker' || modelType === 'pro')) {
+      return NextResponse.json({ error: 'PREMIUM_MODELS_TEMPORARILY_LOCKED' }, { status: 403 });
+    }
+
+    // Route to Gemini if requested and configured
+    if (useGemini && isGeminiConfigured()) {
+      try {
+        // ✅ التحقق من حد المحاولات للـ Free users
+        const geminiQuota = await canUseGemini(auth.uid);
+        if (!geminiQuota.allowed) {
+          // الرسالة الخاصة عندما يتجاوز Free user حده
+          const errorMessage =
+            geminiQuota.reason === 'GEMINI_FREE_LIMIT_EXCEEDED'
+              ? `آسف! لقد استخدمت ${geminiQuota.attemptsUsed}/${geminiQuota.attemptsLimit} محاولات Gemini اليوم.\n\nبسبب التكلفة العالية للتشغيل، يمكنك التجربة لاحقاً غداً أو الاشتراك في **Tolzy Pro** للحصول على محاولات غير محدودة.`
+              : 'غير مصرح باستخدام Gemini في الوقت الحالي';
+
+          return NextResponse.json(
+            {
+              error: 'GEMINI_QUOTA_EXCEEDED',
+              message: errorMessage,
+              attemptsUsed: geminiQuota.attemptsUsed,
+              attemptsLimit: geminiQuota.attemptsLimit,
+              upgradeUrl: '/upgrade',
+            },
+            { status: 429 }
+          );
+        }
+
+        const geminiMessages: GeminiMessage[] = messages;
+        const result = await geminiChatWithGrounding({
+          messages: geminiMessages,
+          systemPrompt: SYSTEM_PROMPT,
+          enableSearchGrounding: true,
+          maxOutputTokens: MAX_OUTPUT_TOKENS,
+          temperature: 0.2,
+        });
+
+        // ✅ تسجيل المحاولة
+        await recordGeminiAttempt(auth.uid);
+
+        return new Response(result.text, {
+          headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Cache-Control': 'no-cache, no-transform',
+            ...(result.citations ? { 'X-Search-Used': 'true', 'X-Citations': JSON.stringify(result.citations) } : {}),
+          },
+        });
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error.message === 'GEMINI_RATE_LIMIT') {
+            return NextResponse.json(
+              { error: 'UPSTREAM_RATE_LIMIT', message: 'تم تجاوز حد الطلبات. الرجاء المحاولة لاحقاً.' },
+              { status: 429 }
+            );
+          }
+          if (error.message === 'GEMINI_AUTH_ERROR') {
+            console.error('Gemini authentication error');
+            return NextResponse.json({ error: 'Gemini API configuration error' }, { status: 500 });
+          }
+        }
+        console.error('Gemini chat failed:', error);
+        return NextResponse.json({ error: 'AI connection failed' }, { status: 500 });
+      }
+    }
+
+    // Fallback to OpenRouter
     const openRouterApiKey = process.env.OPENROUTER_API_KEY;
     if (!openRouterApiKey) {
       return NextResponse.json({ error: 'OpenRouter API key not configured' }, { status: 500 });
     }
 
-    const body = await request.json();
-    const modelType = String(body?.modelType ?? 'flash');
-    const messages = normalizeIncomingMessages(body?.messages);
-    if (LOCK_PREMIUM_MODELS_DURING_LAUNCH && (modelType === 'thinker' || modelType === 'pro')) {
-      return NextResponse.json({ error: 'PREMIUM_MODELS_TEMPORARILY_LOCKED' }, { status: 403 });
-    }
     const effectiveModelType = 'flash';
     const openRouterModel = getOpenRouterModelString(effectiveModelType);
 
