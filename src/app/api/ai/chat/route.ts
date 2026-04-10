@@ -8,7 +8,7 @@ import {
   UPSTREAM_CONGESTION_USER_MESSAGE_AR,
 } from '@/lib/openrouter-defaults';
 import { geminiChatWithGrounding, isGeminiConfigured, type GeminiMessage } from '@/lib/gemini-service';
-import { getUserPlan, recordGeminiAttempt } from '@/lib/gemini-quota';
+import { getUserPlan, recordGeminiAttempt, canUseGemini } from '@/lib/gemini-quota';
 
 if (typeof dns.setDefaultResultOrder === 'function') {
   dns.setDefaultResultOrder('ipv4first');
@@ -143,6 +143,17 @@ export async function POST(request: NextRequest) {
     const messages = normalizeIncomingMessages(body?.messages);
     const useGemini = String(body?.provider ?? 'gemini').toLowerCase() === 'gemini';
 
+    // Enforcement: Daily limit for Free users
+    if (userPlan === 'free') {
+      const quota = await canUseGemini(auth.uid);
+      if (!quota.allowed) {
+        return NextResponse.json({
+          error: 'FREE_LIMIT_EXCEEDED',
+          message: 'عذراً، لقد وصلت إلى الحد الأقصى للمحاولات المجانية اليوم (10 طلبات). يرجى الترقية إلى Pro للحصول على وصول غير محدود.'
+        }, { status: 403 });
+      }
+    }
+
     if (LOCK_PREMIUM_MODELS_DURING_LAUNCH && modelType === 'pro') {
       return NextResponse.json({ error: 'PREMIUM_MODELS_TEMPORARILY_LOCKED' }, { status: 403 });
     }
@@ -228,6 +239,11 @@ export async function POST(request: NextRequest) {
           headers: { 'Content-Type': 'text/plain; charset=utf-8' },
         });
       }
+    }
+
+    // Record attempt for free users after successful AI response
+    if (userPlan === 'free') {
+      await recordGeminiAttempt(auth.uid);
     }
 
     return new Response(text, {
