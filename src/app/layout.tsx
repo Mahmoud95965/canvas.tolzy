@@ -7,16 +7,16 @@ import { ThemeProvider } from '@/lib/theme-context';
 const cairo = Cairo({ subsets: ['arabic', 'latin'], display: 'swap' });
 
 export const metadata: Metadata = {
-  title: 'Tolzy AI — مساعدك الذكي المتقدم',
-  description: 'Tolzy AI — مساعد ذكي متقدم للإجابة على الأسئلة، كتابة الكود، وتصميم واجهات مذهلة.',
-  keywords: ['Tolzy AI', 'AI assistant', 'مساعد ذكاء اصطناعي', 'chatbot', 'code generation'],
+  title: 'TOLZY AI — المساعد اللغوي الذكي للبرمجة والمعرفة',
+  description: 'TOLZY AI — نموذج لغوي متقدم للإجابة على كافة تساؤلاتك مع تخصص دقيق في عالم البرمجة وحل المشكلات التقنية.',
+  keywords: ['TOLZY AI', 'programming AI', 'مساعد برمجيا', 'ذكاء اصطناعي', 'نموذج لغوي'],
   icons: {
     icon: '/icon.png',
     apple: '/icon.png',
   },
   openGraph: {
-  title: 'Tolzy AI — مساعدك الذكي المتقدم',
-    description: 'مساعد ذكي لكل شيء — كود، تصاميم، وأسئلة.',
+  title: 'TOLZY AI — ذكاء لغوي فائق للبرمجة',
+    description: 'نموذج لغوي متكامل للإجابة على أسئلتك وحل مشاكلك البرمجية.',
     type: 'website',
   },
 };
