@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-const PRICING_URL = '/pricing';
+const PRICING_URL = 'https://www.tolzy.me/pricing';
 
 export default function UpgradePage() {
   const router = useRouter();

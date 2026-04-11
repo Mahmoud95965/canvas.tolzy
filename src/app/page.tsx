@@ -184,11 +184,11 @@ export default function LandingPage() {
                           <MessageSquare size={14} /> بدء الدردشة
                         </Link>
                         {plan === 'free' ? (
-                          <button onClick={() => router.push('/pricing')} className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/10 rounded-xl transition-colors">
+                          <button onClick={() => router.push('https://www.tolzy.me/pricing')} className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/10 rounded-xl transition-colors">
                             <Sparkles size={14} /> ترقية إلى Pro
                           </button>
                         ) : (
-                          <button onClick={() => router.push('/pricing')} className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-foreground rounded-xl transition-colors">
+                          <button onClick={() => router.push('https://www.tolzy.me/pricing')} className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-foreground rounded-xl transition-colors">
                             <Sparkles size={14} /> الخطط والأسعار
                           </button>
                         )}
@@ -388,7 +388,7 @@ export default function LandingPage() {
                     ابدأ الاستخدام
                  </Link>
                  <Link 
-                    href="/pricing" 
+                    href="https://www.tolzy.me/pricing" 
                     className="hex-glass text-white px-10 py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-white/10 transition-all font-cairo"
                  >
                     خطط الاشتراك <ChevronRight size={16} className="inline ml-1" />
@@ -409,7 +409,7 @@ export default function LandingPage() {
             </div>
             
             <div className="flex gap-8 text-xs font-bold text-zinc-500 uppercase tracking-widest">
-               <Link href="/pricing" className="hover:text-white transition-colors">الأسعار</Link>
+               <Link href="https://www.tolzy.me/pricing" className="hover:text-white transition-colors">الأسعار</Link>
                <Link href="/login" className="hover:text-white transition-colors">الدخول</Link>
             </div>
             

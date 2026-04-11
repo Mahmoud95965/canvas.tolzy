@@ -9,7 +9,7 @@ import ChatSidebar, { Conversation } from '@/components/chat/ChatSidebar';
 import { useTheme } from '@/lib/theme-context';
 import { LOCK_PREMIUM_MODELS_DURING_LAUNCH, PRO_LAUNCH_GUARD } from '@/lib/plan';
 
-const PRICING_URL = '/pricing';
+const PRICING_URL = 'https://www.tolzy.me/pricing';
 const SPEECH_RECOGNITION_LANG = 'ar-EG';
 
 interface SpeechRecognitionAlternative {

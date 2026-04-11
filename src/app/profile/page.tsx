@@ -29,7 +29,7 @@ export default function ProfilePage() {
           </div>
         ) : (
           <Link
-            href="/pricing"
+            href="https://www.tolzy.me/pricing"
             className="w-full inline-flex items-center justify-center bg-black text-white rounded-xl py-3 font-bold hover:opacity-90 transition"
           >
             رفع الخطة إلى Pro

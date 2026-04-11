@@ -50,7 +50,7 @@ export default function PaySuccessPage() {
           <Link href="/app" className="px-4 py-2 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold">
             الانتقال إلى Copilot
           </Link>
-          <Link href="/pricing" className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-white/20 text-zinc-700 dark:text-zinc-200 font-semibold">
+          <Link href="https://www.tolzy.me/pricing" className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-white/20 text-zinc-700 dark:text-zinc-200 font-semibold">
             عرض الخطط
           </Link>
         </div>

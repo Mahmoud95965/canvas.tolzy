@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     const session = await stripe.billingPortal.sessions.create({
       customer: data.stripe_customer_id,
-      return_url: `${appUrl}/pricing`,
+      return_url: 'https://www.tolzy.me/pricing',
     });
 
     return NextResponse.json({ url: session.url });

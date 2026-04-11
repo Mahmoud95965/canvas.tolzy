@@ -15,7 +15,8 @@ export async function GET() {
     },
     checks: {
       authDomainLooksLikeFirebase:
-        (process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || '').includes('firebaseapp.com'),
+        (process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || '').includes('firebaseapp.com') ||
+        (process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || '').includes('auth.tolzy.me'),
       appDomainConfigured: Boolean(process.env.NEXT_PUBLIC_APP_DOMAIN),
     },
     note:

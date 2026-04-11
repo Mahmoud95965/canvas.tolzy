@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     const stripe = new Stripe(stripeSecret, { apiVersion: '2025-08-27.basil' });
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
     const successUrl = `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `${appUrl}/pricing`;
+    const cancelUrl = 'https://www.tolzy.me/pricing';
 
     const session = await stripe.checkout.sessions.create({
       mode: service.mode,
