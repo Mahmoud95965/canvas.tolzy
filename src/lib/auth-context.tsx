@@ -91,15 +91,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!response.ok) {
         setPlan('free');
+        setUsageCount(0);
+        setUsageLimit(10);
         return;
       }
 
       const payload = await response.json();
       
-      // Update usage if provided
+      // Update usage if provided - with proper fallbacks
       if (payload?.usage) {
-        setUsageCount(payload.usage.used || 0);
-        setUsageLimit(payload.usage.limit || 10);
+        setUsageCount(payload.usage.used ?? 0);
+        setUsageLimit(payload.usage.limit ?? 10);
+      } else {
+        // If no usage data, ensure we still have a valid limit
+        setUsageLimit(10);
       }
 
       if (payload?.plan) {

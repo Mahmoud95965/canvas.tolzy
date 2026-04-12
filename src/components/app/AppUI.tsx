@@ -351,6 +351,9 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
         if (errorData.error === 'PRO_REQUIRED') {
           throw new Error('هذه الميزة متاحة لمشتركي Pro فقط. يمكنك الترقية من صفحة الأسعار.');
         }
+        if (errorData.error === 'FREE_LIMIT_EXCEEDED') {
+          throw new Error('🔒 لقد وصلت إلى الحد الأقصى من الطلبات المجانية (10/يوم)\n\n💸 السبب: أسعار الخدمات عالية جداً\n\n📈 يرجى الترقية إلى Pro للحصول على وصول غير محدود:\nhttps://www.tolzy.me/pricing');
+        }
         if (errorData.error === 'UPSTREAM_RATE_LIMIT') {
           throw new Error(
             typeof errorData.message === 'string' && errorData.message.trim()
@@ -549,21 +552,7 @@ export default function AppUI({ initialChatId }: { initialChatId: string | null 
                         الخطة الحالية: {planTextLabel}
                       </span>
                     </div>
-                    {plan === 'free' && (
-                       <div className="mt-3 bg-zinc-100 dark:bg-white/5 rounded-xl p-2.5">
-                          <div className="flex justify-between items-center mb-1.5">
-                             <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">الاستخدام اليومي</span>
-                             <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400">{usageCount} / {usageLimit}</span>
-                          </div>
-                          <div className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-                             <div 
-                                className="h-full bg-indigo-500 transition-all duration-500" 
-                                style={{ width: `${Math.min(100, (usageCount / usageLimit) * 100)}%` }}
-                             />
-                          </div>
-                          <p className="text-[9px] text-zinc-500 mt-2 leading-relaxed">المستخدمون في الخطة المجانية لديهم 10 طلبات يومياً فقط.</p>
-                       </div>
-                    )}
+
                   </div>
                   
                   <div className="p-1.5 flex flex-col gap-0.5">

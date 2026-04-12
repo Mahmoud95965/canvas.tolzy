@@ -108,7 +108,13 @@ export async function GET(req: NextRequest) {
 
     if (error) {
       if (isMissingTableError(error)) {
-        return NextResponse.json({ entitlements: [], plan: 'free', source: 'fallback_no_entitlements_table' });
+        const attemptsUsed = await getGeminiAttemptsToday(auth.uid);
+        return NextResponse.json({ 
+          entitlements: [], 
+          plan: 'free', 
+          source: 'fallback_no_entitlements_table',
+          usage: { used: attemptsUsed, limit: GEMINI_FREE_LIMIT }
+        });
       }
       throw error;
     }
